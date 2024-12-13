@@ -14,6 +14,7 @@ import {
     TypeCategory,
 } from './BaseTypes';
 import { TypeHintSettings } from './settings';
+import { AutoImport } from './terminal/AutoImport';
 
 /**
  * 基础类型处理中间件
@@ -88,49 +89,7 @@ export class BaseTypeProcess {
      * @param document 当前文档
      */
     protected addImportEdit(item: CompletionItem, typeName: string, document: TextDocument) {
-        // 清理类型名称
-        const cleanName = this.cleanTypeName(typeName, {
-            removeBrackets: true,
-            removeTypingPrefix: false,
-        });
-
-        // 如果不是typing模块的类型，直接返回
-        if (!Object.values(TypingTypes).includes(cleanName as TypingTypes)) {
-            return;
-        }
-
-        const additionalTextEdits: TextEdit[] = [];
-        const docText = document.getText();
-
-        // 检查是否已存在相应的导入语句
-        const fromTypingImportRegex = new RegExp(
-            `^\\s*from\\s+typing\\s+import\\s+[^\\n]*\\b${cleanName}\\b`,
-            'm'
-        );
-        if (fromTypingImportRegex.test(docText)) {
-            return;
-        }
-
-        // 检查是否存在其他typing导入语句
-        const existingImportRegex = /^(\s*from\s+typing\s+import\s+[^{\n]+?)(?:\n|$)/m;
-        const match = existingImportRegex.exec(docText);
-
-        if (match) {
-            // 如果存在，在现有导入语句中添加新类型
-            const importLine = match[1];
-            const range = new Range(
-                document.positionAt(match.index),
-                document.positionAt(match.index + importLine.length)
-            );
-            additionalTextEdits.push(new TextEdit(range, `${importLine}, ${cleanName}`));
-        } else {
-            // 如果不存在，创建新的导入语句
-            additionalTextEdits.push(
-                new TextEdit(new Range(0, 0, 0, 0), `from typing import ${cleanName}\n`)
-            );
-        }
-
-        item.additionalTextEdits = additionalTextEdits;
+        AutoImport.addImportEdit(item, typeName, document);
     }
 
     /**
