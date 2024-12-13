@@ -14,7 +14,7 @@ import { returnHintTrigger, BuiltinTypes, getDataTypeContainer } from './BaseTyp
  * Python函数返回值类型提示的自动完成提供程序
  * 继承自BaseCompletionProvider基类
  *
- * 功能:
+ * 主要功能:
  * - 检测函数返回值类型提示的触发条件
  * - 提供内置类型和typing模块类型的自动完成
  * - 支持在输入 -> 后触发提示
@@ -22,6 +22,7 @@ import { returnHintTrigger, BuiltinTypes, getDataTypeContainer } from './BaseTyp
 export class ReturnValueCompletionProvider extends BaseCompletionProvider {
     /**
      * 判断是否应该提供自动完成项
+     *
      * @param line 当前行对象
      * @param pos 光标位置
      * @returns 是否应该提供自动完成
@@ -32,7 +33,9 @@ export class ReturnValueCompletionProvider extends BaseCompletionProvider {
      * 3. 当前行匹配函数定义的返回值类型模式: ) ->
      */
     private shouldProvideItems(line: TextLine, pos: Position): boolean {
+        // 检查光标位置和前两个字符
         if (pos.character > 0 && line.text.substring(pos.character - 2, pos.character) === '->') {
+            // 检查是否匹配函数返回值类型的模式
             return /\) *->[: ]*$/m.test(line.text);
         }
         return false;
@@ -40,6 +43,7 @@ export class ReturnValueCompletionProvider extends BaseCompletionProvider {
 
     /**
      * 提供自动完成项的主要方法
+     *
      * @param doc 当前文档
      * @param pos 光标位置
      * @param token 取消令牌
@@ -47,10 +51,9 @@ export class ReturnValueCompletionProvider extends BaseCompletionProvider {
      * @returns CompletionList对象或null
      *
      * 处理流程:
-     * 1. 检查触发字符是否正确
+     * 1. 检查触发字符是否正确(是否为>)
      * 2. 判断是否应该提供自动完成
-     * 3. 添加内置类型提示
-     * 4. 添加typing模块类型提示
+     * 3. 生成并返回类型提示列表
      */
     public async provideCompletionItems(
         doc: TextDocument,
@@ -58,15 +61,16 @@ export class ReturnValueCompletionProvider extends BaseCompletionProvider {
         token: CancellationToken,
         context: CompletionContext
     ): Promise<CompletionList | null> {
-        // 检查触发字符
+        // 检查触发字符是否为>
         if (context.triggerCharacter !== returnHintTrigger) {
             return null;
         }
 
+        // 初始化自动完成项数组
         const items: CompletionItem[] = [];
         const line = doc.lineAt(pos);
 
-        // 如果满足提供条件
+        // 如果满足提供条件且未取消，生成类型提示
         if (this.shouldProvideItems(line, pos)) {
             await this.processTypeHints('', doc.getText(), items, token, doc);
         }

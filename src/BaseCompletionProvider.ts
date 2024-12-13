@@ -27,6 +27,7 @@ export abstract class BaseCompletionProvider implements vscode.CompletionItemPro
     protected itemSortPrefix: number = 90;
     // 当前正在处理的文档
     protected currentDocument?: TextDocument;
+    // 类型处理器实例
     protected typeProcess: BaseTypeProcess;
 
     /**
@@ -41,6 +42,12 @@ export abstract class BaseCompletionProvider implements vscode.CompletionItemPro
     /**
      * 提供自动完成项的抽象方法
      * 子类必须实现此方法来提供具体的自动完成功能
+     *
+     * @param doc 当前文档
+     * @param pos 光标位置
+     * @param token 取消令牌
+     * @param context 自动完成上下文
+     * @returns 返回CompletionList或null
      */
     abstract provideCompletionItems(
         doc: TextDocument,
@@ -51,6 +58,7 @@ export abstract class BaseCompletionProvider implements vscode.CompletionItemPro
 
     /**
      * 处理类型提示的主要逻辑
+     *
      * @param name 参数名称
      * @param documentText 文档文本
      * @param items 自动完成项数组
@@ -64,9 +72,11 @@ export abstract class BaseCompletionProvider implements vscode.CompletionItemPro
         token: CancellationToken,
         doc: TextDocument
     ): Promise<void> {
-        // 添加内置类型和typing模块类型提示
+        // 添加内置类型提示
         items.push(...this.typeProcess.getBuiltinHints(doc));
+        // 增加排序前缀以确保正确的显示顺序
         this.itemSortPrefix++;
+        // 添加typing模块类型提示
         items.push(...this.typeProcess.getTypingHints(doc));
     }
 }

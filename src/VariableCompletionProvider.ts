@@ -13,14 +13,16 @@ import { variableHintTrigger } from './BaseTypes';
  * Python变量类型提示的自动完成提供程序
  * 继承自BaseCompletionProvider基类
  *
- * 功能:
+ * 主要功能:
  * - 检测变量类型提示的触发条件
  * - 提供变量类型的自动完成建议
  * - 支持在输入变量名后的冒号(:)时触发提示
+ * - 排除海象运算符(:=)的情况
  */
 export class VariableCompletionProvider extends BaseCompletionProvider {
     /**
      * 判断是否应该提供变量类型提示
+     *
      * @param precedingText 光标前的文本
      * @returns 是否应该提供类型提示
      *
@@ -40,6 +42,7 @@ export class VariableCompletionProvider extends BaseCompletionProvider {
 
     /**
      * 提供自动完成项的主要方法
+     *
      * @param doc 当前文档
      * @param pos 光标位置
      * @param token 取消令牌

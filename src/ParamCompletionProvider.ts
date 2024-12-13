@@ -14,7 +14,7 @@ import { paramHintTrigger } from './BaseTypes';
  * 函数参数提示的自动完成提供程序
  * 继承自BaseCompletionProvider基类
  *
- * 功能:
+ * 主要功能:
  * - 检测函数参数类型提示的触发条件
  * - 从参数名称中提取有效的参数
  * - 提供参数类型的自动完成建议
@@ -22,6 +22,7 @@ import { paramHintTrigger } from './BaseTypes';
 export class ParamCompletionProvider extends BaseCompletionProvider {
     /**
      * 从文本中提取有效的参数名
+     *
      * @param precedingText 光标前的文本
      * @returns 提取的参数名,如果无效则返回null
      *
@@ -43,6 +44,7 @@ export class ParamCompletionProvider extends BaseCompletionProvider {
 
     /**
      * 判断是否应该提供自动完成项
+     *
      * @param precedingText 光标前的文本
      * @param activePos 当前光标位置
      * @param doc 当前文档
@@ -87,6 +89,7 @@ export class ParamCompletionProvider extends BaseCompletionProvider {
 
     /**
      * 提供自动完成项的主要方法
+     *
      * @param doc 当前文档
      * @param pos 光标位置
      * @param token 取消令牌
