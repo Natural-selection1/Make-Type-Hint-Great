@@ -1,4 +1,11 @@
-import { CompletionItem, CompletionItemKind, TextDocument, TextEdit, Range, SnippetString } from 'vscode';
+import {
+    CompletionItem,
+    CompletionItemKind,
+    TextDocument,
+    TextEdit,
+    Range,
+    SnippetString,
+} from 'vscode';
 import {
     BuiltinTypes,
     TypingTypes,
