@@ -133,7 +133,7 @@ export class TypeSearch {
 
         watcher.onDidDelete((uri) => {
             this.cacheService.clearCache(uri.fsPath);
-            this.searchedTypes.removeFileTypes(uri.fsPath);
+            this.searchedTypes.removeAllFileData(uri.fsPath);
         });
     }
 }

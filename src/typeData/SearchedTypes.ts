@@ -49,6 +49,9 @@ export default class SearchedTypes {
      * @param baseClasses 基类列表
      */
     public addLocalClass(className: string, filePath: string, baseClasses: string[] = []) {
+        if (!className || !filePath) {
+            throw new Error('类名和文件路径不能为空');
+        }
         this.localClasses.set(className, {
             filePath,
             baseClasses
@@ -153,7 +156,7 @@ export default class SearchedTypes {
      * 移除指定文件中的所有类型定义和导入
      * @param filePath 要移除的文件路径
      */
-    public removeFileTypes(filePath: string) {
+    public removeAllFileData(filePath: string) {
         this.removeFromMap(this.localClasses, filePath);
         this.removeFromMap(this.importedClasses, filePath);
 
