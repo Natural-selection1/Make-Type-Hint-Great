@@ -5,13 +5,21 @@ declare module 'tree-sitter' {
         setLanguage(language: any): void;
     }
 
-    export type { SyntaxNode, Tree };
+    export interface Point {
+        row: number;
+        column: number;
+    }
 
     export interface SyntaxNode {
         type: string;
         text: string;
         children: SyntaxNode[];
-        descendantForPosition(position: {row: number, column: number}): SyntaxNode | null;
+        parent: SyntaxNode | null;
+        startPosition: Point;
+        endPosition: Point;
+        startIndex: number;
+        endIndex: number;
+        descendantForPosition(position: Point): SyntaxNode | null;
         closest(type: string): SyntaxNode | null;
     }
 

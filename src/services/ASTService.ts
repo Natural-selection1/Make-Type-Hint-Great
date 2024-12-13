@@ -75,4 +75,57 @@ export class ASTService {
             this.traverseTree(child, callback);
         }
     }
+
+    /**
+     * 获取指定位置的函数定义
+     */
+    public getFunctionDefinitionAt(line: number, character: number): SyntaxNode | null {
+        const node = this.getNodeAtPosition(line, character);
+        if (!node) return null;
+
+        const funcNode = node.closest('function_definition');
+        return funcNode || null;
+    }
+
+    /**
+     * 获取所有导入语句
+     */
+    public findAllImports(): SyntaxNode[] {
+        if (!this.tree) return [];
+
+        const imports: SyntaxNode[] = [];
+        this.traverseTree(this.tree.rootNode, node => {
+            if (node.type === 'import_statement' || node.type === 'import_from_statement') {
+                imports.push(node);
+            }
+        });
+        return imports;
+    }
+
+    /**
+     * 分析变量声明
+     */
+    public analyzeVariableDeclaration(line: number, character: number): {
+        name: string;
+        type?: string;
+        value?: string;
+    } | null {
+        const node = this.getNodeAtPosition(line, character);
+        if (!node) return null;
+
+        const assignment = node.closest('assignment');
+        if (!assignment) return null;
+
+        const identifier = assignment.children.find(child => child.type === 'identifier');
+        const typeAnnotation = assignment.children.find(child => child.type === 'type');
+        const value = assignment.children.find(child =>
+            !['identifier', 'type', '='].includes(child.type)
+        );
+
+        return identifier ? {
+            name: identifier.text,
+            type: typeAnnotation?.text,
+            value: value?.text
+        } : null;
+    }
 }
