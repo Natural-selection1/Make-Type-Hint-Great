@@ -7,7 +7,7 @@ import {
     CompletionItem,
 } from 'vscode';
 import { BaseCompletionProvider } from '../BaseCompletionProvider';
-import { variableHintTrigger } from '../BaseTypes';
+import { variableHintTrigger } from '../typeData/BaseTypes';
 
 /**
  * Python变量类型提示的自动完成提供程序

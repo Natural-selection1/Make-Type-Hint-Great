@@ -4,7 +4,7 @@ import {
     TextEdit,
     Range,
 } from 'vscode';
-import { TypingTypes } from '../BaseTypes';
+import { TypingTypes } from '../typeData/BaseTypes';
 import { ASTService } from '../services/ASTService';
 
 export class AutoImport {

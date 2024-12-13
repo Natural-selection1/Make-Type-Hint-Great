@@ -8,7 +8,7 @@ import {
     CompletionItem,
 } from 'vscode';
 import { BaseCompletionProvider } from '../BaseCompletionProvider';
-import { returnHintTrigger, BuiltinTypes, getDataTypeContainer } from '../BaseTypes';
+import { returnHintTrigger, BuiltinTypes, getDataTypeContainer } from '../typeData/BaseTypes';
 
 /**
  * Python函数返回值类型提示的自动完成提供程序

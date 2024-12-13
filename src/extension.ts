@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { ParamCompletionProvider } from './terminal/ParamCompletionProvider';
 import { ReturnValueCompletionProvider } from './terminal/ReturnValueCompletionProvider';
 import { VariableCompletionProvider } from './terminal/VariableCompletionProvider';
-import { paramHintTrigger, returnHintTrigger, variableHintTrigger } from './BaseTypes';
+import { paramHintTrigger, returnHintTrigger, variableHintTrigger } from './typeData/BaseTypes';
 import { TypeHintSettings } from './settings';
 import { ASTService } from './services/ASTService';
 import { CacheService } from './services/CacheService';

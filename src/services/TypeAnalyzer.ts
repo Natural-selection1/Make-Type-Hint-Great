@@ -1,6 +1,6 @@
 import { ASTService } from './ASTService';
 import type { SyntaxNode } from 'tree-sitter';
-import { DataType, TypeCategory, getDataTypeContainer } from '../BaseTypes';
+import { DataType, TypeCategory, getDataTypeContainer } from '../typeData/BaseTypes';
 
 export class TypeAnalyzer {
     private astService: ASTService;

@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { ASTService } from './services/ASTService';
 import { CacheService } from './services/CacheService';
-import SearchedTypes from './SearchedTypes';
+import SearchedTypes from './typeData/SearchedTypes';
 import { TypeAnalyzer } from './services/TypeAnalyzer';
 
 /**

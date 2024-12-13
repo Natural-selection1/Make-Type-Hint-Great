@@ -1,5 +1,5 @@
 import type { Tree } from 'tree-sitter';
-import { DataType } from '../BaseTypes';
+import { DataType } from '../typeData/BaseTypes';
 
 export class CacheService {
     private documentCache: Map<string, Tree> = new Map();

@@ -12,7 +12,7 @@ import {
     getBuiltInTypeContainer,
     getTypingTypeContainer,
     TypeCategory,
-} from '../BaseTypes';
+} from '../typeData/BaseTypes';
 import { TypeHintSettings } from '../settings';
 import { AutoImport } from '../terminal/AutoImport';
 
