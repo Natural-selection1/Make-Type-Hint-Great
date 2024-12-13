@@ -8,7 +8,7 @@ import {
     TextDocument,
 } from 'vscode';
 import { TypeHintSettings } from './settings';
-import { BaseTypeProcess } from './BaseTypeProcess';
+import { BaseTypeProcess } from './typeProcess/BaseTypeProcess';
 import { ASTService } from './services/ASTService';
 import { TypeAnalyzer } from './services/TypeAnalyzer';
 

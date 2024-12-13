@@ -12,9 +12,9 @@ import {
     getBuiltInTypeContainer,
     getTypingTypeContainer,
     TypeCategory,
-} from './BaseTypes';
-import { TypeHintSettings } from './settings';
-import { AutoImport } from './terminal/AutoImport';
+} from '../BaseTypes';
+import { TypeHintSettings } from '../settings';
+import { AutoImport } from '../terminal/AutoImport';
 
 /**
  * 基础类型处理中间件
