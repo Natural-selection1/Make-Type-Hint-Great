@@ -22,11 +22,37 @@ export class BaseTypeProcess {
     }
 
     /**
+     * 清理类型名称，移除前缀和后缀
+     * @param typeName 原始类型名称
+     * @param options 清理选项
+     * @returns 清理后的类型名称
+     */
+    protected cleanTypeName(
+        typeName: string,
+        options: {
+            removeBrackets?: boolean;  // 是否移除方括号
+            removeTypingPrefix?: boolean;  // 是否移除typing.前缀
+        } = {
+            removeBrackets: true,
+            removeTypingPrefix: true
+        }
+    ): string {
+        let cleanName = typeName;
+        if (options.removeBrackets) {
+            cleanName = cleanName.replace(/\[?\]?$/, '');
+        }
+        if (options.removeTypingPrefix) {
+            cleanName = cleanName.replace('typing.', '');
+        }
+        return cleanName;
+    }
+
+    /**
      * 获取类型的来源信息
      */
     protected getTypeSource(typeName: string): string {
-        const cleanTypeName = typeName.replace(/\[\]$/, '').replace('typing.', '');
-        return Object.values(TypingTypes).includes(cleanTypeName as TypingTypes)
+        const cleanName = this.cleanTypeName(typeName);
+        return Object.values(TypingTypes).includes(cleanName as TypingTypes)
             ? '[typing]'
             : '[builtin]';
     }
@@ -42,7 +68,9 @@ export class BaseTypeProcess {
      * 在文件开头添加导入语句
      */
     protected addImportEdit(item: CompletionItem, typeName: string, document: TextDocument) {
-        if (!Object.values(TypingTypes).includes(typeName as TypingTypes)) {
+        const cleanName = this.cleanTypeName(typeName, { removeBrackets: true, removeTypingPrefix: false });
+
+        if (!Object.values(TypingTypes).includes(cleanName as TypingTypes)) {
             return;
         }
 
@@ -50,7 +78,7 @@ export class BaseTypeProcess {
         const docText = document.getText();
 
         const fromTypingImportRegex = new RegExp(
-            `^\\s*from\\s+typing\\s+import\\s+[^\\n]*\\b${typeName}\\b`,
+            `^\\s*from\\s+typing\\s+import\\s+[^\\n]*\\b${cleanName}\\b`,
             'm'
         );
         if (fromTypingImportRegex.test(docText)) {
@@ -66,10 +94,10 @@ export class BaseTypeProcess {
                 document.positionAt(match.index),
                 document.positionAt(match.index + importLine.length)
             );
-            additionalTextEdits.push(new TextEdit(range, `${importLine}, ${typeName}`));
+            additionalTextEdits.push(new TextEdit(range, `${importLine}, ${cleanName}`));
         } else {
             additionalTextEdits.push(
-                new TextEdit(new Range(0, 0, 0, 0), `from typing import ${typeName}\n`)
+                new TextEdit(new Range(0, 0, 0, 0), `from typing import ${cleanName}\n`)
             );
         }
 
@@ -90,7 +118,7 @@ export class BaseTypeProcess {
         (item as any).document = document;
 
         if (item.detail === '[typing]') {
-            const typeName = hint.replace('typing.', '').replace(/\[\]$/, '');
+            const typeName = this.cleanTypeName(hint);
             this.addImportEdit(item, typeName, document);
         }
 
@@ -112,7 +140,7 @@ export class BaseTypeProcess {
         (item as any).document = document;
 
         if (item.detail === '[typing]') {
-            const typeName = typeHint.replace('typing.', '').replace(/\[\]$/, '');
+            const typeName = this.cleanTypeName(typeHint);
             this.addImportEdit(item, typeName, document);
         }
 
