@@ -7,8 +7,8 @@ import {
     Range,
     CompletionItem,
 } from 'vscode';
-import { BaseCompletionProvider } from './BaseCompletionProvider';
-import { paramHintTrigger } from './BaseTypes';
+import { BaseCompletionProvider } from '../BaseCompletionProvider';
+import { paramHintTrigger } from '../BaseTypes';
 
 /**
  * 函数参数提示的自动完成提供程序
