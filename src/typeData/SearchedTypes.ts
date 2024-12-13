@@ -198,4 +198,118 @@ export default class SearchedTypes {
     public addLiteralType(name: string, values: (string | number | boolean)[], filePath: string) {
         this.literalTypes.set(name, {values, filePath});
     }
+
+    /**
+     * 获取所有本地类的Map
+     */
+    public getLocalClasses(): Map<string, {filePath: string, baseClasses: string[]}> {
+        return this.localClasses;
+    }
+
+    /**
+     * 获取所有导入类的Map
+     */
+    public getImportedClasses(): Map<string, {originalName: string, filePath: string}> {
+        return this.importedClasses;
+    }
+
+    /**
+     * 获取所有类型别名的Map
+     */
+    public getTypeAliases(): Map<string, {originalType: string, filePath: string}> {
+        return this.typeAliases;
+    }
+
+    /**
+     * 获取所有类型变量的Map
+     */
+    public getTypeVars(): Map<string, {constraints: string[], filePath: string}> {
+        return this.typeVars;
+    }
+
+    /**
+     * 获取所有协议类型的Map
+     */
+    public getProtocols(): Map<string, {
+        methods: {[key: string]: {
+            params: string[],
+            returnType: string
+        }},
+        filePath: string
+    }> {
+        return this.protocols;
+    }
+
+    /**
+     * 获取所有字面量类型的Map
+     */
+    public getLiteralTypes(): Map<string, {
+        values: (string | number | boolean)[],
+        filePath: string
+    }> {
+        return this.literalTypes;
+    }
+
+    /**
+     * 获取指定文件中定义的所有类型
+     * @param filePath 文件路径
+     */
+    public getFileTypes(filePath: string): Array<{
+        name: string,
+        isRefinable: boolean
+    }> {
+        const types: Array<{name: string, isRefinable: boolean}> = [];
+
+        // 收集本地类
+        for (const [className, info] of this.localClasses) {
+            if (info.filePath === filePath) {
+                types.push({
+                    name: className,
+                    isRefinable: info.baseClasses.length > 0
+                });
+            }
+        }
+
+        // 收集类型别名
+        for (const [aliasName, info] of this.typeAliases) {
+            if (info.filePath === filePath) {
+                types.push({
+                    name: aliasName,
+                    isRefinable: false
+                });
+            }
+        }
+
+        // 收集类型变量
+        for (const [varName, info] of this.typeVars) {
+            if (info.filePath === filePath) {
+                types.push({
+                    name: varName,
+                    isRefinable: info.constraints.length > 0
+                });
+            }
+        }
+
+        // 收集协议类型
+        for (const [protocolName, info] of this.protocols) {
+            if (info.filePath === filePath) {
+                types.push({
+                    name: protocolName,
+                    isRefinable: false
+                });
+            }
+        }
+
+        // 收集字面量类型
+        for (const [literalName, info] of this.literalTypes) {
+            if (info.filePath === filePath) {
+                types.push({
+                    name: literalName,
+                    isRefinable: false
+                });
+            }
+        }
+
+        return types;
+    }
 }

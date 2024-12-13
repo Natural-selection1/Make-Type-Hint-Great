@@ -1,6 +1,6 @@
 import { ASTService } from './ASTService';
 import type { SyntaxNode } from 'tree-sitter';
-import { DataType, TypeCategory, getDataTypeContainer } from '../typeData/BaseTypes';
+import { DataType, TypeCategory, getBaseType } from '../typeData/BaseTypes';
 
 interface ImportResult {
     className: string;
@@ -278,17 +278,21 @@ export class TypeAnalyzer {
      */
     public analyzeProtocols(): Array<{
         name: string,
-        methods: {[key: string]: {
-            params: string[],
-            returnType: string
-        }}
+        methods: {
+            [key: string]: {
+                params: string[],
+                returnType: string
+            }
+        }
     }> {
         const protocols: Array<{
             name: string,
-            methods: {[key: string]: {
-                params: string[],
-                returnType: string
-            }}
+            methods: {
+                [key: string]: {
+                    params: string[],
+                    returnType: string
+                }
+            }
         }> = [];
 
         // 查找所有Protocol类定义
@@ -301,10 +305,12 @@ export class TypeAnalyzer {
             const nameNode = node.children.find(child => child.type === 'identifier');
             if (!nameNode) continue;
 
-            const methods: {[key: string]: {
-                params: string[],
-                returnType: string
-            }} = {};
+            const methods: {
+                [key: string]: {
+                    params: string[],
+                    returnType: string
+                }
+            } = {};
 
             // 分析协议中的方法定义
             const methodNodes = this.astService.findNodes(

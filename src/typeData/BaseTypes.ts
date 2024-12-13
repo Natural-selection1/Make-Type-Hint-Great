@@ -287,7 +287,7 @@ export interface DataTypeContainer {
  * 获取包含所有内置Python类型的容器
  * @returns 类型容器对象
  */
-export const getBuiltInTypeContainer = (): DataTypeContainer => {
+export const getBuiltinType = (): DataTypeContainer => {
     const container: DataTypeContainer = {};
 
     // 添加内置类型
@@ -305,7 +305,7 @@ export const getBuiltInTypeContainer = (): DataTypeContainer => {
  * 获取包含所有typing模块类型的容器
  * @returns 类型容器对象
  */
-export const getTypingTypeContainer = (): DataTypeContainer => {
+export const getTypingType = (): DataTypeContainer => {
     const container: DataTypeContainer = {};
 
     // 添加 typing 库的类型
@@ -321,9 +321,9 @@ export const getTypingTypeContainer = (): DataTypeContainer => {
  * 包括内置类型和typing模块类型
  * @returns 类型容器对象
  */
-export const getDataTypeContainer = (): DataTypeContainer => {
+export const getBaseType = (): DataTypeContainer => {
     return {
-        ...getBuiltInTypeContainer(),
-        ...getTypingTypeContainer(),
+        ...getBuiltinType(),
+        ...getTypingType(),
     };
 };

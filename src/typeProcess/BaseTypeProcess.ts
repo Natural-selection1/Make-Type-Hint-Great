@@ -9,8 +9,8 @@ import {
 import {
     BuiltinTypes,
     TypingTypes,
-    getBuiltInTypeContainer,
-    getTypingTypeContainer,
+    getBuiltinType,
+    getTypingType,
     TypeCategory,
 } from '../typeData/BaseTypes';
 import { TypeHintSettings } from '../settings';
@@ -178,7 +178,7 @@ export class BaseTypeProcess {
 
         // 遍历所有内置类型
         Object.values(BuiltinTypes).forEach((typeName: string) => {
-            const type = getBuiltInTypeContainer()[typeName];
+            const type = getBuiltinType()[typeName];
             // 根据设置决定是否添加方括号
             // 如果类型是可细化的且设置了appendBrackets，则添加[]
             const hint =
@@ -204,7 +204,7 @@ export class BaseTypeProcess {
 
         // 遍历所有typing模块类型
         Object.values(TypingTypes).forEach((typeName: string) => {
-            const type = getTypingTypeContainer()[typeName];
+            const type = getTypingType()[typeName];
             // 根据设置决定是否添加方括号
             // 如果类型是可细化的且设置了appendBrackets，则添加[]
             const hint =
