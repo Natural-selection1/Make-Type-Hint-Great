@@ -30,11 +30,11 @@ export class BaseTypeProcess {
     protected cleanTypeName(
         typeName: string,
         options: {
-            removeBrackets?: boolean;  // 是否移除方括号
-            removeTypingPrefix?: boolean;  // 是否移除typing.前缀
+            removeBrackets?: boolean; // 是否移除方括号
+            removeTypingPrefix?: boolean; // 是否移除typing.前缀
         } = {
             removeBrackets: true,
-            removeTypingPrefix: true
+            removeTypingPrefix: true,
         }
     ): string {
         let cleanName = typeName;
@@ -68,7 +68,10 @@ export class BaseTypeProcess {
      * 在文件开头添加导入语句
      */
     protected addImportEdit(item: CompletionItem, typeName: string, document: TextDocument) {
-        const cleanName = this.cleanTypeName(typeName, { removeBrackets: true, removeTypingPrefix: false });
+        const cleanName = this.cleanTypeName(typeName, {
+            removeBrackets: true,
+            removeTypingPrefix: false,
+        });
 
         if (!Object.values(TypingTypes).includes(cleanName as TypingTypes)) {
             return;
@@ -105,16 +108,18 @@ export class BaseTypeProcess {
     }
 
     /**
-     * 创建新的自动完成项
+     * 创建基础的自动完成项
      */
-    public newCompletionItem(
+    private createBaseCompletionItem(
         hint: string,
         sortTextPrefix: string,
-        document: TextDocument
+        document: TextDocument,
+        isPreselected: boolean = false
     ): CompletionItem {
         const item = new CompletionItem(this.labelFor(hint), CompletionItemKind.TypeParameter);
-        item.sortText = sortTextPrefix + hint;
+        item.sortText = `${sortTextPrefix}${hint}`;
         item.detail = this.getTypeSource(hint);
+        item.preselect = isPreselected;
         (item as any).document = document;
 
         if (item.detail === '[typing]') {
@@ -126,6 +131,17 @@ export class BaseTypeProcess {
     }
 
     /**
+     * 创建新的自动完成项
+     */
+    public newCompletionItem(
+        hint: string,
+        sortTextPrefix: string,
+        document: TextDocument
+    ): CompletionItem {
+        return this.createBaseCompletionItem(hint, sortTextPrefix, document);
+    }
+
+    /**
      * 创建一个被选中的自动完成项
      */
     public selectedCompletionItem(
@@ -133,18 +149,7 @@ export class BaseTypeProcess {
         sortTextPrefix: string = '0b',
         document: TextDocument
     ): CompletionItem {
-        let item = new CompletionItem(this.labelFor(typeHint), CompletionItemKind.TypeParameter);
-        item.sortText = `${sortTextPrefix}${typeHint}`;
-        item.preselect = true;
-        item.detail = this.getTypeSource(typeHint);
-        (item as any).document = document;
-
-        if (item.detail === '[typing]') {
-            const typeName = this.cleanTypeName(typeHint);
-            this.addImportEdit(item, typeName, document);
-        }
-
-        return item;
+        return this.createBaseCompletionItem(typeHint, sortTextPrefix, document, true);
     }
 
     /**
