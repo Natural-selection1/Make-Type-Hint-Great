@@ -1,13 +1,13 @@
 {
-	"name": "vscode-python-typehint",
-	"displayName": "Python Type Hint",
-	"version": "1.5.2",
-	"publisher": "njqdev",
-	"description": "Type hint completion for Python.",
+	"name": "make-python-typehint-great",
+	"displayName": "Make Type Hint Great",
+	"version": "0.0.1",
+	"publisher": "fusong",
+	"description": "Better Type hint completion for Python.",
 	"icon": "resource/images/icon.png",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/njqdev/vscode-python-typehint"
+		"url": "https://github.com/Natural-selection1/Make-Type-Hint-Great"
 	},
 	"license": "MIT",
 	"categories": [
@@ -41,7 +41,7 @@
 			}
 		],
 		"configuration": {
-			"title": "Python Type Hint",
+			"title": "Make Type Hint Great",
 			"properties": {
 				"python.typeHint.appendBrackets": {
 					"type": "boolean",
