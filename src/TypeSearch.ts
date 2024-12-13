@@ -4,6 +4,12 @@ import { CacheService } from './services/CacheService';
 import SearchedTypes from './typeData/SearchedTypes';
 import { TypeAnalyzer } from './services/TypeAnalyzer';
 
+interface ImportedClass {
+    className: string;
+    source: string;
+    alias?: string;
+}
+
 /**
  * TypeSearch类负责扫描和解析工作区中的Python文件，
  * 收集所有的类定义和导入信息
@@ -71,14 +77,40 @@ export class TypeSearch {
         for (const node of classNodes) {
             const nameNode = node.children.find(child => child.type === 'identifier');
             if (nameNode) {
-                this.searchedTypes.addLocalClass(nameNode.text, filePath);
+                // 添加对继承的支持
+                const baseClasses = this.astService.getBaseClasses(node);
+                this.searchedTypes.addLocalClass(nameNode.text, filePath, baseClasses);
             }
         }
 
-        // 处理导入语句
-        const importedClasses = typeAnalyzer.analyzeImports();
-        for (const { className } of importedClasses) {
-            this.searchedTypes.addImportedClass(className, filePath);
+        // 处理导入语句，支持别名
+        const importedClasses = typeAnalyzer.analyzeImports() as ImportedClass[];
+        for (const { className, alias } of importedClasses) {
+            this.searchedTypes.addImportedClass(className, filePath, alias);
+        }
+
+        // 处理类型别名和NewType
+        const typeAliases = typeAnalyzer.analyzeTypeAliases();
+        for (const { name, originalType } of typeAliases) {
+            this.searchedTypes.addTypeAlias(name, originalType, filePath);
+        }
+
+        // 处理类型变量
+        const typeVars = typeAnalyzer.analyzeTypeVars();
+        for (const { name, constraints } of typeVars) {
+            this.searchedTypes.addTypeVar(name, constraints, filePath);
+        }
+
+        // 处理协议类型
+        const protocols = typeAnalyzer.analyzeProtocols();
+        for (const { name, methods } of protocols) {
+            this.searchedTypes.addProtocol(name, methods, filePath);
+        }
+
+        // 处理字面量类型
+        const literals = typeAnalyzer.analyzeLiteralTypes();
+        for (const { name, values } of literals) {
+            this.searchedTypes.addLiteralType(name, values, filePath);
         }
     }
 
@@ -101,7 +133,7 @@ export class TypeSearch {
 
         watcher.onDidDelete((uri) => {
             this.cacheService.clearCache(uri.fsPath);
-            this.searchedTypes.removeFileClasses(uri.fsPath);
+            this.searchedTypes.removeFileTypes(uri.fsPath);
         });
     }
 }

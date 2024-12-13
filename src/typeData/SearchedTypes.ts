@@ -6,12 +6,30 @@ export default class SearchedTypes {
     /** 单例模式实例 */
     private static instance: SearchedTypes;
     /** 存储本地定义的类名到文件路径的映射 */
-    private localClasses: Map<string, Set<string>> = new Map();
+    private localClasses: Map<string, {filePath: string, baseClasses: string[]}> = new Map();
     /** 存储导入的类名到文件路径的映射 */
-    private importedClasses: Map<string, Set<string>> = new Map();
+    private importedClasses: Map<string, {originalName: string, filePath: string}> = new Map();
+    private typeAliases: Map<string, {originalType: string, filePath: string}>;
+    private typeVars: Map<string, {constraints: string[], filePath: string}>;
+    /** 存储协议类型定义 */
+    private protocols: Map<string, {
+        methods: {[key: string]: {
+            params: string[],
+            returnType: string
+        }},
+        filePath: string
+    }> = new Map();
+    /** 存储字面量类型 */
+    private literalTypes: Map<string, {
+        values: (string | number | boolean)[],
+        filePath: string
+    }> = new Map();
 
     /** 私有构造函数，确保单例模式 */
-    private constructor() {}
+    private constructor() {
+        this.typeAliases = new Map();
+        this.typeVars = new Map();
+    }
 
     /**
      * 获取SearchedTypes的单例实例
@@ -28,24 +46,26 @@ export default class SearchedTypes {
      * 添加本地定义的类
      * @param className 类名
      * @param filePath 定义该类的文件路径
+     * @param baseClasses 基类列表
      */
-    public addLocalClass(className: string, filePath: string) {
-        if (!this.localClasses.has(className)) {
-            this.localClasses.set(className, new Set());
-        }
-        this.localClasses.get(className)?.add(filePath);
+    public addLocalClass(className: string, filePath: string, baseClasses: string[] = []) {
+        this.localClasses.set(className, {
+            filePath,
+            baseClasses
+        });
     }
 
     /**
      * 添加导入的类
      * @param className 类名
      * @param filePath 导入该类的文件路径
+     * @param alias 别名
      */
-    public addImportedClass(className: string, filePath: string) {
-        if (!this.importedClasses.has(className)) {
-            this.importedClasses.set(className, new Set());
-        }
-        this.importedClasses.get(className)?.add(filePath);
+    public addImportedClass(className: string, filePath: string, alias?: string) {
+        this.importedClasses.set(alias || className, {
+            originalName: className,
+            filePath
+        });
     }
 
     /**
@@ -62,10 +82,9 @@ export default class SearchedTypes {
      * @param map 要处理的Map对象
      * @param filePath 要移除的文件路径
      */
-    private removeFromMap(map: Map<string, Set<string>>, filePath: string) {
-        for (const [className, files] of map.entries()) {
-            files.delete(filePath);
-            if (files.size === 0) {
+    private removeFromMap(map: Map<string, {filePath: string, baseClasses?: string[]} | {originalName: string, filePath: string}>, filePath: string) {
+        for (const [className, value] of map.entries()) {
+            if ('filePath' in value && value.filePath === filePath) {
                 map.delete(className);
             }
         }
@@ -97,9 +116,86 @@ export default class SearchedTypes {
     public getClassSource(className: string): string[] {
         const sources = new Set<string>();
 
-        this.localClasses.get(className)?.forEach(path => sources.add(path));
-        this.importedClasses.get(className)?.forEach(path => sources.add(path));
+        const localClass = this.localClasses.get(className);
+        if (localClass) {
+            sources.add(localClass.filePath);
+        }
+
+        const importedClass = this.importedClasses.get(className);
+        if (importedClass) {
+            sources.add(importedClass.filePath);
+        }
 
         return Array.from(sources);
+    }
+
+    /**
+     * 添加类型别名
+     * @param name 类型别名
+     * @param originalType 原始类型
+     * @param filePath 定义该类型的文件路径
+     */
+    public addTypeAlias(name: string, originalType: string, filePath: string) {
+        this.typeAliases.set(name, {originalType, filePath});
+    }
+
+    /**
+     * 添加类型变量
+     * @param name 类型变量名
+     * @param constraints 约束条件
+     * @param filePath 定义该类型的文件路径
+     */
+    public addTypeVar(name: string, constraints: string[], filePath: string) {
+        this.typeVars.set(name, {constraints, filePath});
+    }
+
+    /**
+     * 移除指定文件中的所有类型定义和导入
+     * @param filePath 要移除的文件路径
+     */
+    public removeFileTypes(filePath: string) {
+        this.removeFromMap(this.localClasses, filePath);
+        this.removeFromMap(this.importedClasses, filePath);
+
+        // 清理类型别名
+        for (const [name, info] of this.typeAliases.entries()) {
+            if (info.filePath === filePath) {
+                this.typeAliases.delete(name);
+            }
+        }
+
+        // 清理类型变量
+        for (const [name, info] of this.typeVars.entries()) {
+            if (info.filePath === filePath) {
+                this.typeVars.delete(name);
+            }
+        }
+
+        // 清理协议类型
+        for (const [name, info] of this.protocols.entries()) {
+            if (info.filePath === filePath) {
+                this.protocols.delete(name);
+            }
+        }
+
+        // 清理字面量类型
+        for (const [name, info] of this.literalTypes.entries()) {
+            if (info.filePath === filePath) {
+                this.literalTypes.delete(name);
+            }
+        }
+    }
+
+    /** 添加协议类型 */
+    public addProtocol(name: string, methods: {[key: string]: {
+        params: string[],
+        returnType: string
+    }}, filePath: string) {
+        this.protocols.set(name, {methods, filePath});
+    }
+
+    /** 添加字面量类型 */
+    public addLiteralType(name: string, values: (string | number | boolean)[], filePath: string) {
+        this.literalTypes.set(name, {values, filePath});
     }
 }

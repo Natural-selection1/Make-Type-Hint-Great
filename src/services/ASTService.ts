@@ -191,4 +191,120 @@ export class ASTService {
 
         return `${fromPart}import ${names.join(', ')}`;
     }
+
+    /**
+     * 获取类的基类列表
+     */
+    public getBaseClasses(node: SyntaxNode): string[] {
+        const baseClasses: string[] = [];
+        const argumentList = node.children.find(child => child.type === 'argument_list');
+
+        if (argumentList) {
+            for (const child of argumentList.children) {
+                if (child.type === 'identifier') {
+                    baseClasses.push(child.text);
+                }
+            }
+        }
+
+        return baseClasses;
+    }
+
+    /**
+     * 查找指定类型的所有节点
+     * @param predicate 节点匹配条件
+     * @param parent 可选的父节点
+     */
+    public findNodes(predicate: (node: SyntaxNode) => boolean, parent?: SyntaxNode): SyntaxNode[] {
+        if (!this.tree) return [];
+
+        const nodes: SyntaxNode[] = [];
+        const rootNode = parent || this.tree.rootNode;
+
+        this.traverseTree(rootNode, (node) => {
+            if (predicate(node)) {
+                nodes.push(node);
+            }
+        });
+
+        return nodes;
+    }
+
+    /**
+     * 检查节点是否有特定的基类
+     */
+    public hasBaseClass(node: SyntaxNode, baseClassName: string): boolean {
+        const bases = node.children.find((child: SyntaxNode) => child.type === 'argument_list');
+        if (!bases) return false;
+
+        return bases.children.some((base: SyntaxNode) =>
+            base.type === 'identifier' && base.text === baseClassName
+        );
+    }
+
+    /**
+     * 获取方法的参数列表
+     */
+    public getMethodParams(node: SyntaxNode): string[] {
+        const params: string[] = [];
+        const paramList = node.children.find((child: SyntaxNode) =>
+            child.type === 'parameters'
+        );
+
+        if (paramList) {
+            for (const param of paramList.children) {
+                if (param.type === 'identifier') {
+                    params.push(param.text);
+                }
+            }
+        }
+
+        return params;
+    }
+
+    /**
+     * 获取返回类型注解
+     */
+    public getReturnType(node: SyntaxNode): string | undefined {
+        const returnType = node.children.find((child: SyntaxNode) =>
+            child.type === 'type_annotation'
+        );
+
+        return returnType?.children[0]?.text;
+    }
+
+    /**
+     * 检查节点是否有特定的类型注解
+     */
+    public hasTypeAnnotation(node: SyntaxNode, typeName: string): boolean {
+        const typeAnnotation = node.children.find((child: SyntaxNode) =>
+            child.type === 'type_annotation'
+        );
+
+        return typeAnnotation?.children[0]?.text === typeName;
+    }
+
+    /**
+     * 获取字面量值列表
+     */
+    public getLiteralValues(node: SyntaxNode): (string | number | boolean)[] {
+        const values: (string | number | boolean)[] = [];
+        const literalList = node.children.find((child: SyntaxNode) =>
+            child.type === 'list' || child.type === 'tuple'
+        );
+
+        if (literalList) {
+            for (const value of literalList.children) {
+                if (value.type === 'string') {
+                    values.push(value.text);
+                } else if (value.type === 'number') {
+                    values.push(Number(value.text));
+                } else if (value.type === 'true' || value.type === 'false') {
+                    values.push(value.type === 'true');
+                }
+            }
+        }
+
+        return values;
+    }
 }
