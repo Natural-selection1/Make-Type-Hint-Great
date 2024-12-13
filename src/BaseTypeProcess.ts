@@ -138,6 +138,16 @@ export class BaseTypeProcess {
         sortTextPrefix: string,
         document: TextDocument
     ): CompletionItem {
+        if (hint.endsWith('[]')) {
+            const item = this.createBaseCompletionItem(hint, sortTextPrefix, document);
+            item.command = {
+                command: 'cursorMove',
+                title: 'Move Cursor Left',
+                arguments: [{ to: 'left', value: 1 }],
+            };
+            return item;
+        }
+
         return this.createBaseCompletionItem(hint, sortTextPrefix, document);
     }
 
@@ -163,7 +173,7 @@ export class BaseTypeProcess {
             const type = getBuiltInTypeContainer()[typeName];
             const hint =
                 this.settings.appendBrackets && type.category === TypeCategory.Refinable
-                    ? `${typeName}[`
+                    ? `${typeName}[]`
                     : typeName;
             items.push(this.newCompletionItem(hint, sortTextPrefix, document));
         });
@@ -182,7 +192,7 @@ export class BaseTypeProcess {
             const type = getTypingTypeContainer()[typeName];
             const hint =
                 this.settings.appendBrackets && type.category === TypeCategory.Refinable
-                    ? `${typeName}[`
+                    ? `${typeName}[]`
                     : typeName;
             items.push(this.newCompletionItem(hint, sortTextPrefix, document));
         });
