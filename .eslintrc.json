@@ -1,0 +1,42 @@
+{
+    "root": true,
+    "parser": "@typescript-eslint/parser",
+    "parserOptions": {
+        "ecmaVersion": 12,
+        "sourceType": "module"
+    },
+    "plugins": [
+        "@typescript-eslint"
+    ],
+    "rules": {
+        "@typescript-eslint/naming-convention": "warn",
+        "@typescript-eslint/semi": "error",
+        "@typescript-eslint/indent": ["error", 4],
+        "curly": "warn",
+        "eqeqeq": "warn",
+        "no-unused-vars": "warn",
+        "no-throw-literal": "warn",
+        "no-trailing-spaces":"warn"
+    },
+    "overrides": [
+      {
+        "files": ["**/*.js"],
+        "rules": {
+          "@typescript-eslint/semi": "warn",
+          "@typescript-eslint/indent": "none"
+        }
+      },
+      {
+        "files": ["**/*.ts"],
+        "rules": {
+          "@typescript-eslint/naming-convention": ["warn", {
+            "selector": "enum",
+            "format": null,
+            "custom": {
+              "regex": "^[A-Z]\\w*$",
+              "match": true
+            }
+          }]
+        }
+      }]
+}
