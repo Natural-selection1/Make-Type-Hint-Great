@@ -24,6 +24,7 @@ export class ParamCompletionProvider extends BaseCompletionProvider {
      * 从文本中提取有效的参数名
      *
      * @param precedingText 光标前的文本
+     * @param doc 当前文档
      * @returns 提取的参数名,如果无效则返回null
      *
      * 处理流程:
@@ -31,14 +32,25 @@ export class ParamCompletionProvider extends BaseCompletionProvider {
      * 2. 获取最后一个分段作为参数名
      * 3. 验证参数名的有效性(不包含特殊字符)
      */
-    private getParam(precedingText: string): string | null {
-        // 按照逗号和括号分割文本
+    private getParam(precedingText: string, doc: TextDocument): string | null {
+        try {
+            // 首先尝试使用 AST
+            const position = doc.positionAt(precedingText.length);
+            const analysis = this.typeAnalyzer.analyzeFunctionParameters({
+                line: position.line,
+                character: position.character
+            });
+
+            if (analysis?.paramName) {
+                return analysis.paramName;
+            }
+        } catch (error) {
+            console.error('Error in AST analysis:', error);
+        }
+
+        // 后备方案：使用原来的正则表达式逻辑
         const split = precedingText.split(/[,(*]/);
-
-        // 获取最后一个分段并去除首尾空格
         let param = split.length > 1 ? split[split.length - 1].trim() : precedingText;
-
-        // 验证参数名的有效性,如果包含特殊字符则返回null
         return !param || /[!:\]\[?/\\{}.+/=)'";@&£%¤|<>$^~¨ -]/.test(param) ? null : param;
     }
 
@@ -122,8 +134,8 @@ export class ParamCompletionProvider extends BaseCompletionProvider {
 
         // 判断是否应该提供自动完成并处理
         if (this.shouldProvideItems(precedingText, pos, doc)) {
-            // 提取参数名
-            const param = this.getParam(precedingText);
+            // 提取参数名 - 传入doc参数
+            const param = this.getParam(precedingText, doc);
 
             // 如果有有效参数名且未取消,生成类型提示
             if (param && !token.isCancellationRequested) {

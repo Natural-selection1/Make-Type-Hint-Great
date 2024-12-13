@@ -10,9 +10,22 @@
 		"rootDir": ".",
 		"strict": true,   /* enable all strict type-checking options */
 		/* Additional Checks */
-		"noImplicitReturns": true /* Report error when not all code paths in function return a value. */
-
+		"noImplicitReturns": true /* Report error when not all code paths in function return a value. */,
+		"esModuleInterop": true,
+		"typeRoots": [
+			"./node_modules/@types",
+			"./src/types"
+		],
+		"baseUrl": ".",
+		"paths": {
+			"tree-sitter": ["src/types/tree-sitter"],
+			"tree-sitter-python": ["src/types/tree-sitter"]
+		}
 	},
+	"include": [
+		"src/**/*",
+		"src/types/**/*"
+	],
 	"exclude": [
 		"node_modules",
 		".vscode-test"

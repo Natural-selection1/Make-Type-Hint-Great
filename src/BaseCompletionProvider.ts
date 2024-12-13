@@ -9,6 +9,8 @@ import {
 } from 'vscode';
 import { TypeHintSettings } from './settings';
 import { BaseTypeProcess } from './BaseTypeProcess';
+import { ASTService } from './services/ASTService';
+import { TypeAnalyzer } from './services/TypeAnalyzer';
 
 /**
  * 自动完成提供程序的基类
@@ -29,6 +31,8 @@ export abstract class BaseCompletionProvider implements vscode.CompletionItemPro
     protected currentDocument?: TextDocument;
     // 类型处理器实例
     protected typeProcess: BaseTypeProcess;
+    protected astService: ASTService;
+    protected typeAnalyzer: TypeAnalyzer;
 
     /**
      * 构造函数
@@ -36,6 +40,8 @@ export abstract class BaseCompletionProvider implements vscode.CompletionItemPro
      */
     constructor(settings: TypeHintSettings) {
         this.settings = settings;
+        this.astService = new ASTService();
+        this.typeAnalyzer = new TypeAnalyzer(this.astService);
         this.typeProcess = new BaseTypeProcess(settings, this.itemSortPrefix);
     }
 
@@ -72,10 +78,16 @@ export abstract class BaseCompletionProvider implements vscode.CompletionItemPro
         token: CancellationToken,
         doc: TextDocument
     ): Promise<void> {
+        // 解析当前文档
+        this.astService.parseCode(documentText);
+
         // 添加内置类型提示
         items.push(...this.typeProcess.getBuiltinHints(doc));
-        // 增加排序前缀以确保正确的显示顺序
-        this.itemSortPrefix++;
+
+        // 添加自定义类型
+        const customTypes = this.typeAnalyzer.analyzeCustomTypes();
+        // 处理自定义类型...
+
         // 添加typing模块类型提示
         items.push(...this.typeProcess.getTypingHints(doc));
     }

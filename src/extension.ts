@@ -4,6 +4,8 @@ import { ReturnValueCompletionProvider } from './ReturnValueCompletionProvider';
 import { VariableCompletionProvider } from './VariableCompletionProvider';
 import { paramHintTrigger, returnHintTrigger, variableHintTrigger } from './BaseTypes';
 import { TypeHintSettings } from './settings';
+import { ASTService } from './services/ASTService';
+import { CacheService } from './services/CacheService';
 
 /**
  * 当插件被激活时调用此函数
@@ -14,8 +16,19 @@ import { TypeHintSettings } from './settings';
  * @param context 插件上下文
  */
 export function activate(context: vscode.ExtensionContext) {
-    // 创建设置实例，用于管理插件配置
     const settings = new TypeHintSettings();
+    const astService = new ASTService();
+    const cacheService = new CacheService();
+
+    // 注册文档变更监听
+    context.subscriptions.push(
+        vscode.workspace.onDidChangeTextDocument(event => {
+            const uri = event.document.uri.toString();
+            // 更新AST缓存
+            const tree = astService.parseCode(event.document.getText());
+            cacheService.cacheTree(uri, tree);
+        })
+    );
 
     // 注册自动完成提供程序
     // context.subscriptions用于管理插件的资源释放
@@ -48,4 +61,4 @@ export function activate(context: vscode.ExtensionContext) {
  * 当插件被停用时调用此函数
  * 用于清理资源(目前无需清理)
  */
-export function deactivate() {}
+export function deactivate() { }
