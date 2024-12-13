@@ -1,4 +1,4 @@
-import { CompletionItem, CompletionItemKind, TextDocument, TextEdit, Range } from 'vscode';
+import { CompletionItem, CompletionItemKind, TextDocument, TextEdit, Range, SnippetString } from 'vscode';
 import {
     BuiltinTypes,
     TypingTypes,
@@ -33,9 +33,9 @@ export class BaseTypeProcess {
             removeBrackets?: boolean; // 是否移除方括号
             removeTypingPrefix?: boolean; // 是否移除typing.前缀
         } = {
-            removeBrackets: true,
-            removeTypingPrefix: true,
-        }
+                removeBrackets: true,
+                removeTypingPrefix: true,
+            }
     ): string {
         let cleanName = typeName;
         if (options.removeBrackets) {
@@ -140,11 +140,7 @@ export class BaseTypeProcess {
     ): CompletionItem {
         if (hint.endsWith('[]')) {
             const item = this.createBaseCompletionItem(hint, sortTextPrefix, document);
-            item.command = {
-                command: 'cursorMove',
-                title: 'Move Cursor Left',
-                arguments: [{ to: 'left', value: 1 }],
-            };
+            item.insertText = new SnippetString(`${hint.slice(0, -2)}[$1]`);
             return item;
         }
 
