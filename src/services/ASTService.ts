@@ -1,5 +1,7 @@
 import type Parser from 'tree-sitter';
 import type { SyntaxNode, Tree } from 'tree-sitter';
+import { TextDocument } from 'vscode';
+import type { AST, ImportNode, ImportStatementNode } from './types';
 
 export class ASTService {
     private parser: Parser;
@@ -127,5 +129,66 @@ export class ASTService {
             type: typeAnnotation?.text,
             value: value?.text
         } : null;
+    }
+
+    /**
+     * 解析文档
+     */
+    public async parseDocument(document: TextDocument): Promise<AST> {
+        const sourceCode = document.getText();
+        return this.parseCode(sourceCode);
+    }
+
+    /**
+     * 查找typing模块中特定类型的导入
+     */
+    public findTypingImport(ast: AST, typeName: string): ImportNode | null {
+        const imports = this.findAllImports();
+        return imports.find(node => {
+            if (node.type !== 'import_from_statement') return false;
+            const moduleNode = node.children.find(child => child.type === 'dotted_name');
+            if (moduleNode?.text !== 'typing') return false;
+
+            const importedNames = node.children
+                .filter(child => child.type === 'dotted_name')
+                .map(child => child.text);
+
+            return importedNames.includes(typeName);
+        }) as ImportNode || null;
+    }
+
+    /**
+     * 查找typing模块的导入语句
+     */
+    public findTypingImportStatement(ast: AST): ImportStatementNode | null {
+        const imports = this.findAllImports();
+        const typingImport = imports.find(node => {
+            if (node.type !== 'import_from_statement') return false;
+            const moduleNode = node.children.find(child => child.type === 'dotted_name');
+            return moduleNode?.text === 'typing';
+        });
+
+        if (!typingImport) return null;
+
+        return {
+            ...typingImport,
+            start: typingImport.startIndex,
+            end: typingImport.endIndex
+        } as ImportStatementNode;
+    }
+
+    /**
+     * 在现有导入语句中添加新类型
+     */
+    public addTypeToImport(importNode: ImportStatementNode, typeName: string): string {
+        const importText = this.sourceCode.slice(importNode.start, importNode.end);
+        const importParts = importText.split('import');
+        if (importParts.length !== 2) return importText;
+
+        const [fromPart, namesPart] = importParts;
+        const names = namesPart.trim().split(',').map(n => n.trim());
+        names.push(typeName);
+
+        return `${fromPart}import ${names.join(', ')}`;
     }
 }

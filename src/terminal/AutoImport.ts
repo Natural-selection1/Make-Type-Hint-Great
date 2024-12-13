@@ -5,6 +5,7 @@ import {
     Range,
 } from 'vscode';
 import { TypingTypes } from '../BaseTypes';
+import { ASTService } from '../services/ASTService';
 
 export class AutoImport {
     /**
@@ -19,9 +20,9 @@ export class AutoImport {
             removeBrackets?: boolean;
             removeTypingPrefix?: boolean;
         } = {
-            removeBrackets: true,
-            removeTypingPrefix: false,
-        }
+                removeBrackets: true,
+                removeTypingPrefix: false,
+            }
     ): string {
         let cleanName = typeName;
         if (options.removeBrackets) {
@@ -39,35 +40,37 @@ export class AutoImport {
      * @param typeName 类型名称
      * @param document 当前文档
      */
-    public static addImportEdit(item: CompletionItem, typeName: string, document: TextDocument) {
+    public static async addImportEdit(item: CompletionItem, typeName: string, document: TextDocument) {
         const cleanName = this.cleanTypeName(typeName);
 
         if (!Object.values(TypingTypes).includes(cleanName as TypingTypes)) {
             return;
         }
 
-        const additionalTextEdits: TextEdit[] = [];
-        const docText = document.getText();
+        const astService = new ASTService();
+        const ast = await astService.parseDocument(document);
 
-        const fromTypingImportRegex = new RegExp(
-            `^\\s*from\\s+typing\\s+import\\s+[^\\n]*\\b${cleanName}\\b`,
-            'm'
-        );
-        if (fromTypingImportRegex.test(docText)) {
+        // 检查是否已经存在typing导入
+        const existingImport = astService.findTypingImport(ast, cleanName);
+        if (existingImport) {
             return;
         }
 
-        const existingImportRegex = /^(\s*from\s+typing\s+import\s+[^{\n]+?)(?:\n|$)/m;
-        const match = existingImportRegex.exec(docText);
+        const additionalTextEdits: TextEdit[] = [];
 
-        if (match) {
-            const importLine = match[1];
+        // 查找现有的typing导入语句
+        const existingTypingImport = astService.findTypingImportStatement(ast);
+
+        if (existingTypingImport) {
+            // 在现有的typing导入中添加新类型
             const range = new Range(
-                document.positionAt(match.index),
-                document.positionAt(match.index + importLine.length)
+                document.positionAt(existingTypingImport.start),
+                document.positionAt(existingTypingImport.end)
             );
-            additionalTextEdits.push(new TextEdit(range, `${importLine}, ${cleanName}`));
+            const newImportText = astService.addTypeToImport(existingTypingImport, cleanName);
+            additionalTextEdits.push(new TextEdit(range, newImportText));
         } else {
+            // 添加新的typing导入语句
             additionalTextEdits.push(
                 new TextEdit(new Range(0, 0, 0, 0), `from typing import ${cleanName}\n`)
             );

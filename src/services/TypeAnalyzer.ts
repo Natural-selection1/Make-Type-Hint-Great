@@ -129,4 +129,84 @@ export class TypeAnalyzer {
             return !!typeParameters;
         });
     }
+
+    /**
+     * 分析导入语句中的类
+     * @returns 找到的类名及其来源
+     */
+    public analyzeImports(): { className: string; source: string }[] {
+        const results: { className: string; source: string }[] = [];
+        const importNodes = this.astService.findAllImports();
+
+        for (const node of importNodes) {
+            if (node.type === 'import_statement') {
+                this.analyzeImportStatement(node, results);
+            } else if (node.type === 'import_from_statement') {
+                this.analyzeFromImportStatement(node, results);
+            }
+        }
+
+        return results;
+    }
+
+    private analyzeImportStatement(node: SyntaxNode, results: { className: string; source: string }[]) {
+        for (const child of node.children) {
+            if (child.type === 'dotted_name') {
+                const className = child.text.split('.').pop() || '';
+                if (this.isClassName(className)) {
+                    results.push({
+                        className,
+                        source: child.text
+                    });
+                }
+            }
+        }
+    }
+
+    private analyzeFromImportStatement(node: SyntaxNode, results: { className: string; source: string }[]) {
+        const moduleNode = node.children.find(child => child.type === 'dotted_name');
+        const importedNames = node.children.find(child => child.type === 'import_list');
+
+        if (importedNames && moduleNode) {
+            const modulePath = moduleNode.text;
+
+            for (const name of importedNames.children) {
+                if (name.type === 'aliased_import') {
+                    const originalName = name.children.find(child =>
+                        child.type === 'identifier')?.text || '';
+                    const aliasName = name.children.find(child =>
+                        child.type === 'alias')?.children.find(child =>
+                            child.type === 'identifier')?.text;
+
+                    if (this.isClassName(originalName)) {
+                        results.push({
+                            className: originalName,
+                            source: modulePath
+                        });
+                        if (aliasName && this.isClassName(aliasName)) {
+                            results.push({
+                                className: aliasName,
+                                source: modulePath
+                            });
+                        }
+                    }
+                } else if (name.type === 'identifier') {
+                    const className = name.text;
+                    if (this.isClassName(className)) {
+                        results.push({
+                            className,
+                            source: modulePath
+                        });
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * 判断一个标识符是否为类名
+     */
+    public isClassName(name: string): boolean {
+        return /^[A-Z]/.test(name);
+    }
 }
