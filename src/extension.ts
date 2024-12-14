@@ -6,6 +6,7 @@ import { paramHintTrigger, returnHintTrigger, variableHintTrigger } from './type
 import { TypeHintSettings } from './settings';
 import { ASTService } from './services/ASTService';
 import { CacheService } from './services/CacheService';
+import { CustomTypeSearch } from './CustomTypeSearch';
 
 /**
  * 当插件被激活时调用此函数
@@ -15,10 +16,15 @@ import { CacheService } from './services/CacheService';
  * 3. 变量类型提示 (:)
  * @param context 插件上下文
  */
-export function activate(context: vscode.ExtensionContext) {
+export async function activate(context: vscode.ExtensionContext) {
     const settings = new TypeHintSettings();
     const astService = new ASTService();
     const cacheService = new CacheService();
+
+    // 初始化并启动自定义类型搜索
+    const customTypeSearch = CustomTypeSearch.getInstance();
+    await customTypeSearch.scanWorkspace(); // 扫描工作区
+    customTypeSearch.watchWorkspace(); // 监听文件变化
 
     // 注册文档变更监听
     context.subscriptions.push(

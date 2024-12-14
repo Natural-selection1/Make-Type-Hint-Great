@@ -43,12 +43,16 @@ export class CustomTypeSearch {
      * 收集所有的类定义和导入信息
      */
     public async scanWorkspace() {
+        console.log('Starting workspace scan for Python files...');
         const pythonFiles = await vscode.workspace.findFiles('**/*.py');
+        console.log(`Found ${pythonFiles.length} Python files`);
 
         for (const file of pythonFiles) {
+            console.log(`Processing file: ${file.fsPath}`);
             const content = await this.readFile(file);
             this.parseFileContent(content, file.fsPath);
         }
+        console.log('Workspace scan completed');
     }
 
     /**
@@ -67,6 +71,7 @@ export class CustomTypeSearch {
      * @param filePath 文件路径
      */
     private parseFileContent(content: string, filePath: string) {
+        console.log(`Parsing content for ${filePath}`);
         const tree = this.astService.parseCode(content);
         this.cacheService.cacheTree(filePath, tree);
 
@@ -74,6 +79,7 @@ export class CustomTypeSearch {
 
         // 处理类定义
         const classNodes = this.astService.findAllClassDefinitions();
+        console.log(`Found ${classNodes.length} class definitions in ${filePath}`);
         for (const node of classNodes) {
             const nameNode = node.children.find(child => child.type === 'identifier');
             if (nameNode) {
@@ -123,6 +129,9 @@ export class CustomTypeSearch {
 
         watcher.onDidChange(async uri => {
             const content = await this.readFile(uri);
+            // 先清除旧数据
+            this.searchedTypes.removeAllFileData(uri.fsPath);
+            // 重新解析
             this.parseFileContent(content, uri.fsPath);
         });
 

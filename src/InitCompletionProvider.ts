@@ -9,6 +9,7 @@ import {
 } from 'vscode';
 import { TypeHintSettings } from './settings';
 import { BaseTypeProcess } from './typeProcess/BaseTypeProcess';
+import { CustomTypeProcess } from './typeProcess/CustomTypeProcess';
 import { ASTService } from './services/ASTService';
 import { TypeAnalyzer } from './services/TypeAnalyzer';
 
@@ -33,6 +34,8 @@ export abstract class BaseCompletionProvider implements vscode.CompletionItemPro
     protected currentDocument?: TextDocument;
     // 类型处理器实例,用于处理基础类型提示
     protected typeProcess: BaseTypeProcess;
+    // 自定义类型处理器实例,用于处理自定义类型提示
+    protected customTypeProcess: CustomTypeProcess;
     // AST服务实例,用于代码分析
     protected astService: ASTService;
     // 类型分析器实例,用于分析自定义类型
@@ -47,6 +50,7 @@ export abstract class BaseCompletionProvider implements vscode.CompletionItemPro
         this.astService = new ASTService();
         this.typeAnalyzer = new TypeAnalyzer(this.astService);
         this.typeProcess = new BaseTypeProcess(settings, this.itemSortPrefix);
+        this.customTypeProcess = new CustomTypeProcess(settings, this.itemSortPrefix - 10); // 自定义类型优先级更高
     }
 
     /**
@@ -85,14 +89,60 @@ export abstract class BaseCompletionProvider implements vscode.CompletionItemPro
         // 解析当前文档
         this.astService.parseCode(documentText);
 
+        // 添加自定义类型提示(优先级最高)
+        items.push(...this.customTypeProcess.getAllCustomTypeHints(doc));
+
+        // 添加当前文件的类型提示
+        items.push(...this.customTypeProcess.getFileTypeHints(doc.uri.fsPath, doc));
+
         // 添加内置类型提示
         items.push(...this.typeProcess.getBuiltinHints(doc));
 
-        // 添加自定义类型
-        const customTypes = this.typeAnalyzer.analyzeCustomTypes();
-        // 处理自定义类型...
-
         // 添加typing模块类型提示
         items.push(...this.typeProcess.getTypingHints(doc));
+
+        // 根据名称进行智能排序
+        if (name) {
+            this.sortItemsByRelevance(items, name);
+        }
+    }
+
+    /**
+     * 根据相关性对补全项进行排序
+     */
+    private sortItemsByRelevance(items: CompletionItem[], name: string): void {
+        const nameLower = name.toLowerCase();
+
+        // 计算每个项与名称的相关性
+        items.forEach(item => {
+            const itemName = item.label.toString().toLowerCase();
+            let relevance = 0;
+
+            // 完全匹配给最高分
+            if (itemName === nameLower) {
+                relevance = 100;
+            }
+            // 前缀匹配给较高分
+            else if (itemName.startsWith(nameLower)) {
+                relevance = 80;
+            }
+            // 包含匹配给中等分
+            else if (itemName.includes(nameLower)) {
+                relevance = 60;
+            }
+            // 其他情况给基础分
+            else {
+                relevance = 40;
+            }
+
+            // 自定义类型额外加分
+            if (item.detail?.includes('[Custom]')) {
+                relevance += 20;
+            }
+
+            // 更新排序文本
+            const currentPrefix = item.sortText?.substring(0, 2) || '90';
+            item.sortText = `${currentPrefix}${(100 - relevance).toString().padStart(2, '0')}${itemName}`;
+        });
     }
 }

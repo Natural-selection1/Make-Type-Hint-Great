@@ -1,23 +1,16 @@
-import { CompletionItem, TextDocument } from 'vscode';
+import { CompletionItem, CompletionItemKind, TextDocument, SnippetString } from 'vscode';
 import { BaseTypeProcess } from './BaseTypeProcess';
 import { TypeHintSettings } from '../settings';
 import CustomTypes from '../typeData/CustomTypes';
+import { TypeCategory } from '../typeData/BaseTypes';
 
 /**
  * 自定义类型处理中间件
  * 处理所有从Python文件中收集到的自定义类型
- *
- * 主要功能:
- * - 处理本地定义的类型提示
- * - 处理导入的类型提示
- * - 处理类型别名提示
- * - 处理类型变量提示
- * - 处理协议类型提示
- * - 处理字面量类型提示
- * - 支持文件级别的类型提示管理
  */
 export class CustomTypeProcess extends BaseTypeProcess {
     private searchedTypes: CustomTypes;
+    private static TYPE_SOURCE = '[Custom]';
 
     constructor(settings: TypeHintSettings, itemSortPrefix: number = 80) {
         super(settings, itemSortPrefix);
@@ -25,140 +18,212 @@ export class CustomTypeProcess extends BaseTypeProcess {
     }
 
     /**
-     * 获取本地定义的类的提示
+     * 创建自定义类型的补全项
+     */
+    protected createCustomCompletionItem(
+        hint: string,
+        sortTextPrefix: string,
+        document: TextDocument,
+        detail?: string,
+        isRefinable: boolean = false
+    ): CompletionItem {
+        const item = new CompletionItem(this.labelFor(hint), CompletionItemKind.TypeParameter);
+        item.sortText = `${sortTextPrefix}${hint}`;
+        item.detail = detail || CustomTypeProcess.TYPE_SOURCE;
+
+        // 如果类型可细化且设置了appendBrackets，添加类型参数占位符
+        if (isRefinable && this.settings.appendBrackets) {
+            item.insertText = new SnippetString(`${hint}[$1]`);
+        }
+
+        return item;
+    }
+
+    /**
+     * 获取本地定义的类的提示(添加缓存)
      */
     public getLocalClassHints(document: TextDocument): CompletionItem[] {
-        const items: CompletionItem[] = [];
-        const sortTextPrefix = this.itemSortPrefix.toString();
+        return this.typeCache.getOrCreate('localClasses', document, () => {
+            const items: CompletionItem[] = [];
+            const sortTextPrefix = this.itemSortPrefix.toString();
 
-        // 遍历所有本地类
-        for (const [className, info] of this.searchedTypes.getLocalClasses()) {
-            // 如果类有基类且设置了appendBrackets，添加类型参数占位符
-            const hint =
-                this.settings.appendBrackets && info.baseClasses.length > 0
-                    ? `${className}[]`
-                    : className;
-            items.push(this.newCompletionItem(hint, sortTextPrefix, document));
-        }
+            for (const [className, info] of this.searchedTypes.getLocalClasses()) {
+                const isRefinable = info.baseClasses.length > 0;
+                const detail = `${CustomTypeProcess.TYPE_SOURCE} (Local${
+                    info.baseClasses.length > 0 ? `, extends ${info.baseClasses.join(', ')}` : ''
+                })`;
 
-        return items;
+                items.push(
+                    this.createCustomCompletionItem(
+                        className,
+                        sortTextPrefix,
+                        document,
+                        detail,
+                        isRefinable
+                    )
+                );
+            }
+
+            return items;
+        });
     }
 
     /**
-     * 获取导入的类的提示
+     * 获取导入的类的提示(添加缓存)
      */
     public getImportedClassHints(document: TextDocument): CompletionItem[] {
-        const items: CompletionItem[] = [];
-        const sortTextPrefix = (this.itemSortPrefix + 1).toString();
+        return this.typeCache.getOrCreate('importedClasses', document, () => {
+            const items: CompletionItem[] = [];
+            const sortTextPrefix = (this.itemSortPrefix + 1).toString();
 
-        // 遍历所有导入的类
-        for (const [className, info] of this.searchedTypes.getImportedClasses()) {
-            const hint = this.settings.appendBrackets ? `${className}[]` : className;
-            items.push(this.newCompletionItem(hint, sortTextPrefix, document));
-        }
+            for (const [className, info] of this.searchedTypes.getImportedClasses()) {
+                const detail = `${CustomTypeProcess.TYPE_SOURCE} (Imported from ${info.originalName})`;
+                items.push(
+                    this.createCustomCompletionItem(
+                        className,
+                        sortTextPrefix,
+                        document,
+                        detail,
+                        true // 导入的类默认可细化
+                    )
+                );
+            }
 
-        return items;
+            return items;
+        });
     }
 
     /**
-     * 获取类型别名的提示
+     * 获取类型别名的提示(添加缓存)
      */
     public getTypeAliasHints(document: TextDocument): CompletionItem[] {
-        const items: CompletionItem[] = [];
-        const sortTextPrefix = (this.itemSortPrefix + 2).toString();
+        return this.typeCache.getOrCreate('typeAliases', document, () => {
+            const items: CompletionItem[] = [];
+            const sortTextPrefix = (this.itemSortPrefix + 2).toString();
 
-        // 遍历所有类型别名
-        for (const [aliasName, info] of this.searchedTypes.getTypeAliases()) {
-            items.push(this.newCompletionItem(aliasName, sortTextPrefix, document));
-        }
+            for (const [aliasName, info] of this.searchedTypes.getTypeAliases()) {
+                const detail = `${CustomTypeProcess.TYPE_SOURCE} (Alias for ${info.originalType})`;
+                items.push(
+                    this.createCustomCompletionItem(aliasName, sortTextPrefix, document, detail)
+                );
+            }
 
-        return items;
+            return items;
+        });
     }
 
     /**
-     * 获取类型变量的提示
+     * 获取类型变量的提示(添加缓存)
      */
     public getTypeVarHints(document: TextDocument): CompletionItem[] {
-        const items: CompletionItem[] = [];
-        const sortTextPrefix = (this.itemSortPrefix + 3).toString();
+        return this.typeCache.getOrCreate('typeVars', document, () => {
+            const items: CompletionItem[] = [];
+            const sortTextPrefix = (this.itemSortPrefix + 3).toString();
 
-        // 遍历所有类型变量
-        for (const [varName, info] of this.searchedTypes.getTypeVars()) {
-            // 如果类型变量有约束条件，添加约束信息
-            const hint =
-                info.constraints.length > 0
-                    ? `${varName}[${info.constraints.join(', ')}]`
-                    : varName;
-            items.push(this.newCompletionItem(hint, sortTextPrefix, document));
-        }
+            for (const [varName, info] of this.searchedTypes.getTypeVars()) {
+                const detail = `${CustomTypeProcess.TYPE_SOURCE} (TypeVar${
+                    info.constraints.length > 0 ? ` bound to ${info.constraints.join(' & ')}` : ''
+                })`;
 
-        return items;
+                items.push(
+                    this.createCustomCompletionItem(
+                        varName,
+                        sortTextPrefix,
+                        document,
+                        detail,
+                        info.constraints.length > 0
+                    )
+                );
+            }
+
+            return items;
+        });
     }
 
     /**
-     * 获取协议类型的提示
+     * 获取协议类型的提示(添加缓存)
      */
     public getProtocolHints(document: TextDocument): CompletionItem[] {
-        const items: CompletionItem[] = [];
-        const sortTextPrefix = (this.itemSortPrefix + 4).toString();
+        return this.typeCache.getOrCreate('protocols', document, () => {
+            const items: CompletionItem[] = [];
+            const sortTextPrefix = (this.itemSortPrefix + 4).toString();
 
-        // 遍历所有协议类型
-        for (const [protocolName, info] of this.searchedTypes.getProtocols()) {
-            // 协议类型通常不需要类型参数
-            items.push(this.newCompletionItem(protocolName, sortTextPrefix, document));
-        }
+            for (const [protocolName, info] of this.searchedTypes.getProtocols()) {
+                const methodCount = Object.keys(info.methods).length;
+                const detail = `${CustomTypeProcess.TYPE_SOURCE} (Protocol with ${methodCount} methods)`;
 
-        return items;
+                items.push(
+                    this.createCustomCompletionItem(protocolName, sortTextPrefix, document, detail)
+                );
+            }
+
+            return items;
+        });
     }
 
     /**
-     * 获取字面量类型的提示
+     * 获取字面量类型的提示(添加缓存)
      */
     public getLiteralTypeHints(document: TextDocument): CompletionItem[] {
-        const items: CompletionItem[] = [];
-        const sortTextPrefix = (this.itemSortPrefix + 5).toString();
+        return this.typeCache.getOrCreate('literalTypes', document, () => {
+            const items: CompletionItem[] = [];
+            const sortTextPrefix = (this.itemSortPrefix + 5).toString();
 
-        // 遍历所有字面量类型
-        for (const [literalName, info] of this.searchedTypes.getLiteralTypes()) {
-            // 添加字面量值作为详细信息
-            const item = this.newCompletionItem(literalName, sortTextPrefix, document);
-            item.detail = `Literal[${info.values.join(', ')}]`;
-            items.push(item);
-        }
+            for (const [literalName, info] of this.searchedTypes.getLiteralTypes()) {
+                const detail = `${CustomTypeProcess.TYPE_SOURCE} (Literal: ${info.values.join(' | ')})`;
+                items.push(
+                    this.createCustomCompletionItem(literalName, sortTextPrefix, document, detail)
+                );
+            }
 
-        return items;
+            return items;
+        });
     }
 
     /**
-     * 获取所有自定义类型的提示
+     * 获取所有自定义类型的提示(使用缓存)
      */
     public getAllCustomTypeHints(document: TextDocument): CompletionItem[] {
-        return [
-            ...this.getLocalClassHints(document),
-            ...this.getImportedClassHints(document),
-            ...this.getTypeAliasHints(document),
-            ...this.getTypeVarHints(document),
-            ...this.getProtocolHints(document),
-            ...this.getLiteralTypeHints(document),
-        ];
+        return this.typeCache.getOrCreate('allCustomTypes', document, () => {
+            const localClasses = this.searchedTypes.getLocalClasses();
+            console.log('Local classes found:', localClasses.size);
+
+            const items = [
+                ...this.getLocalClassHints(document),
+                ...this.getImportedClassHints(document),
+                ...this.getTypeAliasHints(document),
+                ...this.getTypeVarHints(document),
+                ...this.getProtocolHints(document),
+                ...this.getLiteralTypeHints(document),
+            ];
+
+            console.log('Total custom type hints:', items.length);
+            return items;
+        });
     }
 
     /**
-     * 获取指定文件中定义的所有类型的提示
+     * 获取指定文件中定义的所有类型的提示(使用缓存)
      */
     public getFileTypeHints(filePath: string, document: TextDocument): CompletionItem[] {
-        const items: CompletionItem[] = [];
-        const sortTextPrefix = this.itemSortPrefix.toString();
+        return this.typeCache.getOrCreate(`file:${filePath}`, document, () => {
+            const items: CompletionItem[] = [];
+            const sortTextPrefix = this.itemSortPrefix.toString();
+            const fileTypes = this.searchedTypes.getFileTypes(filePath);
 
-        // 获取指定文件中的所有类型
-        const fileTypes = this.searchedTypes.getFileTypes(filePath);
+            for (const type of fileTypes) {
+                items.push(
+                    this.createCustomCompletionItem(
+                        type.name,
+                        sortTextPrefix,
+                        document,
+                        `${CustomTypeProcess.TYPE_SOURCE} (Defined in current file)`,
+                        type.isRefinable
+                    )
+                );
+            }
 
-        for (const type of fileTypes) {
-            const hint =
-                this.settings.appendBrackets && type.isRefinable ? `${type.name}[]` : type.name;
-            items.push(this.newCompletionItem(hint, sortTextPrefix, document));
-        }
-
-        return items;
+            return items;
+        });
     }
 }
