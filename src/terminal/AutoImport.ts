@@ -66,8 +66,34 @@ export class AutoImport {
                 document.positionAt(existingTypingImport.start),
                 document.positionAt(existingTypingImport.end)
             );
-            const newImportText = astService.addTypeToImport(existingTypingImport, cleanName);
-            additionalTextEdits.push(new TextEdit(range, newImportText));
+
+            // 获取现有导入文本
+            const currentText = document.getText(range);
+
+            // 处理多行导入的情况
+            if (currentText.includes('(\n')) {
+                // 多行导入格式
+                const lines = currentText.split('\n');
+                const firstLine = lines[0];
+                const lastLine = lines[lines.length - 1];
+
+                // 在第二行插入新的导入
+                lines.splice(1, 0, `    ${cleanName},`);
+
+                const newImportText = lines.join('\n');
+                additionalTextEdits.push(new TextEdit(range, newImportText));
+            } else {
+                // 单行导入格式，转换为多行格式
+                const importNames = astService.getImportedTypes(existingTypingImport);
+                importNames.unshift(cleanName); // 头插法添加新类型
+
+                const newImportText =
+                    'from typing import (\n' +
+                    importNames.map(name => `    ${name},`).join('\n') +
+                    '\n)';
+
+                additionalTextEdits.push(new TextEdit(range, newImportText));
+            }
         } else {
             // 添加新的typing导入语句
             additionalTextEdits.push(

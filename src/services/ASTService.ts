@@ -315,4 +315,27 @@ export class ASTService {
 
         return values;
     }
+
+    /**
+     * 获取导入语句中的所有类型名称
+     * @param importStatement 导入语句节点
+     * @returns 类型名称数组
+     */
+    public getImportedTypes(importStatement: ImportStatementNode): string[] {
+        // 使用原始源代码而不是节点的text属性
+        const importText = this.sourceCode.slice(importStatement.start, importStatement.end);
+
+        // 匹配 from typing import 后面的内容，使用[\s\S]*来代替/s标志
+        const match = importText.match(/from\s+typing\s+import\s+([\s\S]+)$/);
+        if (!match) return [];
+
+        // 处理括号形式和普通形式
+        const importPart = match[1]
+            .replace(/[\(\)]/g, '') // 移除括号
+            .replace(/\s*,\s*/g, ',') // 标准化逗号周围的空白
+            .replace(/\n\s*/g, '') // 移除换行和缩进
+            .trim();
+
+        return importPart.split(',').filter((name: string) => name.length > 0);
+    }
 }
