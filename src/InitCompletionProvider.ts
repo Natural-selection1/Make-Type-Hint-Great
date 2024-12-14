@@ -21,17 +21,21 @@ import { TypeAnalyzer } from './services/TypeAnalyzer';
  * - 处理内置类型和typing模块类型
  * - 管理自动完成项的排序和显示
  * - 处理类型导入语句
+ * - 支持自定义类型提示
+ * - 集成AST分析和类型分析功能
  */
 export abstract class BaseCompletionProvider implements vscode.CompletionItemProvider {
     // 类型提示的配置选项
     protected settings: TypeHintSettings;
-    // 用于排序的前缀数字,默认为90
+    // 用于排序的前缀数字,控制不同类型提示的显示顺序
     protected itemSortPrefix: number = 90;
     // 当前正在处理的文档
     protected currentDocument?: TextDocument;
-    // 类型处理器实例
+    // 类型处理器实例,用于处理基础类型提示
     protected typeProcess: BaseTypeProcess;
+    // AST服务实例,用于代码分析
     protected astService: ASTService;
+    // 类型分析器实例,用于分析自定义类型
     protected typeAnalyzer: TypeAnalyzer;
 
     /**

@@ -6,6 +6,15 @@ import CustomTypes from '../typeData/CustomTypes';
 /**
  * 自定义类型处理中间件
  * 处理所有从Python文件中收集到的自定义类型
+ *
+ * 主要功能:
+ * - 处理本地定义的类型提示
+ * - 处理导入的类型提示
+ * - 处理类型别名提示
+ * - 处理类型变量提示
+ * - 处理协议类型提示
+ * - 处理字面量类型提示
+ * - 支持文件级别的类型提示管理
  */
 export class CustomTypeProcess extends BaseTypeProcess {
     private searchedTypes: CustomTypes;

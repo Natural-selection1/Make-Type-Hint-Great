@@ -1,13 +1,21 @@
 /**
- * SearchedTypes类负责存储和管理从Python文件中收集到的类信息
- * 包括本地定义的类和导入的类
+ * CustomTypes类负责存储和管理从Python文件中收集到的类型信息
+ * 包括:
+ * - 本地定义的类
+ * - 导入的类
+ * - 类型别名
+ * - 类型变量
+ * - 协议类型
+ * - 字面量类型
+ *
+ * 提供单例模式访问和完整的类型信息管理功能
  */
 export default class CustomTypes {
     /** 单例模式实例 */
     private static instance: CustomTypes;
-    /** 存储本地定义的类名到文件路径的映射 */
+    /** 存储本地定义的类名到文件路径和基类信息的映射 */
     private localClasses: Map<string, { filePath: string, baseClasses: string[] }> = new Map();
-    /** 存储导入的类名到文件路径的映射 */
+    /** 存储导入的类名到原始名称和文件路径的映射 */
     private importedClasses: Map<string, { originalName: string, filePath: string }> = new Map();
     private typeAliases: Map<string, { originalType: string, filePath: string }>;
     private typeVars: Map<string, { constraints: string[], filePath: string }>;

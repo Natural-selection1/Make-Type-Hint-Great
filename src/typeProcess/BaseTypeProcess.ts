@@ -19,6 +19,13 @@ import { AutoImport } from '../terminal/AutoImport';
 /**
  * 基础类型处理中间件
  * 提供处理Python类型提示的通用功能
+ *
+ * 主要功能:
+ * - 处理内置类型和typing模块类型的提示
+ * - 管理类型提示的格式化和显示
+ * - 处理类型导入语句
+ * - 支持类型提示的排序和选中状态
+ * - 支持可细化类型的方括号添加
  */
 export class BaseTypeProcess {
     protected settings: TypeHintSettings;

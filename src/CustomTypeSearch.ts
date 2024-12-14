@@ -12,30 +12,30 @@ interface ImportedClass {
 
 /**
  * TypeSearch类负责扫描和解析工作区中的Python文件，
- * 收集所有的类定义和导入信息
+ * 收集所有的类定义、导入信息、类型别名、类型变量、协议类型和字面量类型
  */
-export class TypeSearch {
+export class CustomTypeSearch {
     /** 单例模式实例 */
-    private static instance: TypeSearch;
-    /** 用于存储搜索到的类型信息 */
+    private static instance: CustomTypeSearch;
+    /** 用于存储搜索到的类型信息,包括类定义、类型别名、协议等 */
     private searchedTypes: CustomTypes;
-    /** AST服务 */
+    /** AST服务,用于解析和分析Python代码 */
     private astService: ASTService;
-    /** 缓存服务 */
+    /** 缓存服务,用于缓存AST树和类型信息 */
     private cacheService: CacheService;
 
-    /** 私有构造函数，确保单例模式 */
+    /** 私有构造函数,确保单例模式 */
     private constructor() {
         this.searchedTypes = CustomTypes.getInstance();
         this.astService = new ASTService();
         this.cacheService = new CacheService();
     }
 
-    public static getInstance(): TypeSearch {
-        if (!TypeSearch.instance) {
-            TypeSearch.instance = new TypeSearch();
+    public static getInstance(): CustomTypeSearch {
+        if (!CustomTypeSearch.instance) {
+            CustomTypeSearch.instance = new CustomTypeSearch();
         }
-        return TypeSearch.instance;
+        return CustomTypeSearch.instance;
     }
 
     /**
@@ -62,7 +62,7 @@ export class TypeSearch {
     }
 
     /**
-     * 解析文件内容，提取类定义和导入语句
+     * 解析文件内容,提取类定义和导入语句
      * @param content 文件内容
      * @param filePath 文件路径
      */
@@ -83,7 +83,7 @@ export class TypeSearch {
             }
         }
 
-        // 处理导入语句，支持别名
+        // 处理导入语句,支持别名
         const importedClasses = typeAnalyzer.analyzeImports() as ImportedClass[];
         for (const { className, alias } of importedClasses) {
             this.searchedTypes.addImportedClass(className, filePath, alias);
