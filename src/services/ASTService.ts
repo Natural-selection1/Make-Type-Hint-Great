@@ -25,9 +25,9 @@ export class ASTService {
                         type: '',
                         children: [],
                         closest: () => null,
-                        descendantForPosition: () => null
-                    }
-                })
+                        descendantForPosition: () => null,
+                    },
+                }),
             } as any;
         }
     }
@@ -49,7 +49,7 @@ export class ASTService {
 
         return this.tree.rootNode.descendantForPosition({
             row: line,
-            column: character
+            column: character,
         });
     }
 
@@ -107,7 +107,10 @@ export class ASTService {
     /**
      * 分析变量声明
      */
-    public analyzeVariableDeclaration(line: number, character: number): {
+    public analyzeVariableDeclaration(
+        line: number,
+        character: number
+    ): {
         name: string;
         type?: string;
         value?: string;
@@ -120,15 +123,17 @@ export class ASTService {
 
         const identifier = assignment.children.find(child => child.type === 'identifier');
         const typeAnnotation = assignment.children.find(child => child.type === 'type');
-        const value = assignment.children.find(child =>
-            !['identifier', 'type', '='].includes(child.type)
+        const value = assignment.children.find(
+            child => !['identifier', 'type', '='].includes(child.type)
         );
 
-        return identifier ? {
-            name: identifier.text,
-            type: typeAnnotation?.text,
-            value: value?.text
-        } : null;
+        return identifier
+            ? {
+                  name: identifier.text,
+                  type: typeAnnotation?.text,
+                  value: value?.text,
+              }
+            : null;
     }
 
     /**
@@ -144,17 +149,19 @@ export class ASTService {
      */
     public findTypingImport(ast: AST, typeName: string): ImportNode | null {
         const imports = this.findAllImports();
-        return imports.find(node => {
-            if (node.type !== 'import_from_statement') return false;
-            const moduleNode = node.children.find(child => child.type === 'dotted_name');
-            if (moduleNode?.text !== 'typing') return false;
+        return (
+            (imports.find(node => {
+                if (node.type !== 'import_from_statement') return false;
+                const moduleNode = node.children.find(child => child.type === 'dotted_name');
+                if (moduleNode?.text !== 'typing') return false;
 
-            const importedNames = node.children
-                .filter(child => child.type === 'dotted_name')
-                .map(child => child.text);
+                const importedNames = node.children
+                    .filter(child => child.type === 'dotted_name')
+                    .map(child => child.text);
 
-            return importedNames.includes(typeName);
-        }) as ImportNode || null;
+                return importedNames.includes(typeName);
+            }) as ImportNode) || null
+        );
     }
 
     /**
@@ -173,7 +180,7 @@ export class ASTService {
         return {
             ...typingImport,
             start: typingImport.startIndex,
-            end: typingImport.endIndex
+            end: typingImport.endIndex,
         } as ImportStatementNode;
     }
 
@@ -186,7 +193,10 @@ export class ASTService {
         if (importParts.length !== 2) return importText;
 
         const [fromPart, namesPart] = importParts;
-        const names = namesPart.trim().split(',').map(n => n.trim());
+        const names = namesPart
+            .trim()
+            .split(',')
+            .map(n => n.trim());
         names.push(typeName);
 
         return `${fromPart}import ${names.join(', ')}`;
@@ -221,7 +231,7 @@ export class ASTService {
         const nodes: SyntaxNode[] = [];
         const rootNode = parent || this.tree.rootNode;
 
-        this.traverseTree(rootNode, (node) => {
+        this.traverseTree(rootNode, node => {
             if (predicate(node)) {
                 nodes.push(node);
             }
@@ -237,8 +247,8 @@ export class ASTService {
         const bases = node.children.find((child: SyntaxNode) => child.type === 'argument_list');
         if (!bases) return false;
 
-        return bases.children.some((base: SyntaxNode) =>
-            base.type === 'identifier' && base.text === baseClassName
+        return bases.children.some(
+            (base: SyntaxNode) => base.type === 'identifier' && base.text === baseClassName
         );
     }
 
@@ -247,9 +257,7 @@ export class ASTService {
      */
     public getMethodParams(node: SyntaxNode): string[] {
         const params: string[] = [];
-        const paramList = node.children.find((child: SyntaxNode) =>
-            child.type === 'parameters'
-        );
+        const paramList = node.children.find((child: SyntaxNode) => child.type === 'parameters');
 
         if (paramList) {
             for (const param of paramList.children) {
@@ -266,8 +274,8 @@ export class ASTService {
      * 获取返回类型注解
      */
     public getReturnType(node: SyntaxNode): string | undefined {
-        const returnType = node.children.find((child: SyntaxNode) =>
-            child.type === 'type_annotation'
+        const returnType = node.children.find(
+            (child: SyntaxNode) => child.type === 'type_annotation'
         );
 
         return returnType?.children[0]?.text;
@@ -277,8 +285,8 @@ export class ASTService {
      * 检查节点是否有特定的类型注解
      */
     public hasTypeAnnotation(node: SyntaxNode, typeName: string): boolean {
-        const typeAnnotation = node.children.find((child: SyntaxNode) =>
-            child.type === 'type_annotation'
+        const typeAnnotation = node.children.find(
+            (child: SyntaxNode) => child.type === 'type_annotation'
         );
 
         return typeAnnotation?.children[0]?.text === typeName;
@@ -289,8 +297,8 @@ export class ASTService {
      */
     public getLiteralValues(node: SyntaxNode): (string | number | boolean)[] {
         const values: (string | number | boolean)[] = [];
-        const literalList = node.children.find((child: SyntaxNode) =>
-            child.type === 'list' || child.type === 'tuple'
+        const literalList = node.children.find(
+            (child: SyntaxNode) => child.type === 'list' || child.type === 'tuple'
         );
 
         if (literalList) {

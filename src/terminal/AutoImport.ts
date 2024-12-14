@@ -1,9 +1,4 @@
-import {
-    CompletionItem,
-    TextDocument,
-    TextEdit,
-    Range,
-} from 'vscode';
+import { CompletionItem, TextDocument, TextEdit, Range } from 'vscode';
 import { TypingTypes } from '../typeData/BaseTypes';
 import { ASTService } from '../services/ASTService';
 
@@ -20,9 +15,9 @@ export class AutoImport {
             removeBrackets?: boolean;
             removeTypingPrefix?: boolean;
         } = {
-                removeBrackets: true,
-                removeTypingPrefix: false,
-            }
+            removeBrackets: true,
+            removeTypingPrefix: false,
+        }
     ): string {
         let cleanName = typeName;
         if (options.removeBrackets) {
@@ -40,7 +35,11 @@ export class AutoImport {
      * @param typeName 类型名称
      * @param document 当前文档
      */
-    public static async addImportEdit(item: CompletionItem, typeName: string, document: TextDocument) {
+    public static async addImportEdit(
+        item: CompletionItem,
+        typeName: string,
+        document: TextDocument
+    ) {
         const cleanName = this.cleanTypeName(typeName);
 
         if (!Object.values(TypingTypes).includes(cleanName as TypingTypes)) {

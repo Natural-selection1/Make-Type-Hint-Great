@@ -61,4 +61,4 @@ export function activate(context: vscode.ExtensionContext) {
  * 当插件被停用时调用此函数
  * 用于清理资源(目前无需清理)
  */
-export function deactivate() { }
+export function deactivate() {}

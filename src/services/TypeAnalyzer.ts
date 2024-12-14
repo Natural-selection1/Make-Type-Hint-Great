@@ -40,7 +40,7 @@ export class TypeAnalyzer {
                 if (startPos.row === position.line) {
                     return {
                         paramName: param.text,
-                        existingType: this.getExistingParameterType(param)
+                        existingType: this.getExistingParameterType(param),
                     };
                 }
             }
@@ -56,8 +56,8 @@ export class TypeAnalyzer {
         const parentNode = paramNode.parent;
         if (!parentNode) return undefined;
 
-        const typeNode = parentNode.children.find((child: SyntaxNode) =>
-            child.type === 'type' || child.type === 'annotation'
+        const typeNode = parentNode.children.find(
+            (child: SyntaxNode) => child.type === 'type' || child.type === 'annotation'
         );
         return typeNode?.text;
     }
@@ -124,14 +124,12 @@ export class TypeAnalyzer {
      * 检查类是否包含泛型方法
      */
     private hasGenericMethods(classNode: SyntaxNode): boolean {
-        const functionDefs = classNode.children.filter(child =>
-            child.type === 'function_definition'
+        const functionDefs = classNode.children.filter(
+            child => child.type === 'function_definition'
         );
 
         return functionDefs.some(func => {
-            const typeParameters = func.children.find(child =>
-                child.type === 'type_parameters'
-            );
+            const typeParameters = func.children.find(child => child.type === 'type_parameters');
             return !!typeParameters;
         });
     }
@@ -162,7 +160,7 @@ export class TypeAnalyzer {
                 if (this.isClassName(className)) {
                     results.push({
                         className,
-                        source: child.text
+                        source: child.text,
                     });
                 }
             }
@@ -178,21 +176,21 @@ export class TypeAnalyzer {
 
             for (const name of importedNames.children) {
                 if (name.type === 'aliased_import') {
-                    const originalName = name.children.find(child =>
-                        child.type === 'identifier')?.text || '';
-                    const aliasName = name.children.find(child =>
-                        child.type === 'alias')?.children.find(child =>
-                            child.type === 'identifier')?.text;
+                    const originalName =
+                        name.children.find(child => child.type === 'identifier')?.text || '';
+                    const aliasName = name.children
+                        .find(child => child.type === 'alias')
+                        ?.children.find(child => child.type === 'identifier')?.text;
 
                     if (this.isClassName(originalName)) {
                         results.push({
                             className: originalName,
-                            source: modulePath
+                            source: modulePath,
                         });
                         if (aliasName && this.isClassName(aliasName)) {
                             results.push({
                                 className: aliasName,
-                                source: modulePath
+                                source: modulePath,
                             });
                         }
                     }
@@ -201,7 +199,7 @@ export class TypeAnalyzer {
                     if (this.isClassName(className)) {
                         results.push({
                             className,
-                            source: modulePath
+                            source: modulePath,
                         });
                     }
                 }
@@ -218,23 +216,26 @@ export class TypeAnalyzer {
 
     public analyzeTypeAliases() {
         // 分析类型别名定义
-        const assignments = this.astService.findNodes((node: SyntaxNode) => node.type === 'assignment');
+        const assignments = this.astService.findNodes(
+            (node: SyntaxNode) => node.type === 'assignment'
+        );
         return assignments
             .filter(node => this.isTypeAlias(node))
             .map(node => ({
                 name: this.getAssignmentTarget(node),
-                originalType: this.getAssignmentValue(node)
+                originalType: this.getAssignmentValue(node),
             }));
     }
 
     public analyzeTypeVars() {
         // 分析TypeVar定义
-        const typeVarCalls = this.astService.findNodes((node: SyntaxNode) => node.type === 'call')
+        const typeVarCalls = this.astService
+            .findNodes((node: SyntaxNode) => node.type === 'call')
             .filter(node => this.isTypeVarDefinition(node));
 
         return typeVarCalls.map(node => ({
             name: this.getTypeVarName(node),
-            constraints: this.getTypeVarConstraints(node)
+            constraints: this.getTypeVarConstraints(node),
         }));
     }
 
@@ -251,7 +252,7 @@ export class TypeAnalyzer {
     }
 
     private getTypeVarConstraints(node: SyntaxNode): string[] {
-        return [];  // 实现获取约束的逻辑
+        return []; // 实现获取约束的逻辑
     }
 
     private isTypeAlias(node: SyntaxNode): boolean {
@@ -277,28 +278,28 @@ export class TypeAnalyzer {
      * @returns 协议类型数组
      */
     public analyzeProtocols(): Array<{
-        name: string,
+        name: string;
         methods: {
             [key: string]: {
-                params: string[],
-                returnType: string
-            }
-        }
+                params: string[];
+                returnType: string;
+            };
+        };
     }> {
         const protocols: Array<{
-            name: string,
+            name: string;
             methods: {
                 [key: string]: {
-                    params: string[],
-                    returnType: string
-                }
-            }
+                    params: string[];
+                    returnType: string;
+                };
+            };
         }> = [];
 
         // 查找所有Protocol类定义
-        const protocolNodes = this.astService.findNodes((node: SyntaxNode) =>
-            node.type === 'class_definition' &&
-            this.astService.hasBaseClass(node, 'Protocol')
+        const protocolNodes = this.astService.findNodes(
+            (node: SyntaxNode) =>
+                node.type === 'class_definition' && this.astService.hasBaseClass(node, 'Protocol')
         );
 
         for (const node of protocolNodes) {
@@ -307,9 +308,9 @@ export class TypeAnalyzer {
 
             const methods: {
                 [key: string]: {
-                    params: string[],
-                    returnType: string
-                }
+                    params: string[];
+                    returnType: string;
+                };
             } = {};
 
             // 分析协议中的方法定义
@@ -319,8 +320,8 @@ export class TypeAnalyzer {
             );
 
             for (const methodNode of methodNodes) {
-                const methodName = methodNode.children.find(child =>
-                    child.type === 'identifier'
+                const methodName = methodNode.children.find(
+                    child => child.type === 'identifier'
                 )?.text;
                 if (!methodName) continue;
 
@@ -331,13 +332,13 @@ export class TypeAnalyzer {
 
                 methods[methodName] = {
                     params,
-                    returnType: returnType || 'Any'
+                    returnType: returnType || 'Any',
                 };
             }
 
             protocols.push({
                 name: nameNode.text,
-                methods
+                methods,
             });
         }
 
@@ -349,24 +350,22 @@ export class TypeAnalyzer {
      * @returns 字面量类型数组
      */
     public analyzeLiteralTypes(): Array<{
-        name: string,
-        values: (string | number | boolean)[]
+        name: string;
+        values: (string | number | boolean)[];
     }> {
         const literals: Array<{
-            name: string,
-            values: (string | number | boolean)[]
+            name: string;
+            values: (string | number | boolean)[];
         }> = [];
 
         // 查找所有Literal类型定义
-        const literalNodes = this.astService.findNodes((node: SyntaxNode) =>
-            node.type === 'assignment' &&
-            this.astService.hasTypeAnnotation(node, 'Literal')
+        const literalNodes = this.astService.findNodes(
+            (node: SyntaxNode) =>
+                node.type === 'assignment' && this.astService.hasTypeAnnotation(node, 'Literal')
         );
 
         for (const node of literalNodes) {
-            const nameNode = node.children.find(child =>
-                child.type === 'identifier'
-            );
+            const nameNode = node.children.find(child => child.type === 'identifier');
             if (!nameNode) continue;
 
             // 解析字面量值
@@ -374,7 +373,7 @@ export class TypeAnalyzer {
             if (values.length > 0) {
                 literals.push({
                     name: nameNode.text,
-                    values
+                    values,
                 });
             }
         }

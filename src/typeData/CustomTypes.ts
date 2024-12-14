@@ -14,26 +14,32 @@ export default class CustomTypes {
     /** 单例模式实例 */
     private static instance: CustomTypes;
     /** 存储本地定义的类名到文件路径和基类信息的映射 */
-    private localClasses: Map<string, { filePath: string, baseClasses: string[] }> = new Map();
+    private localClasses: Map<string, { filePath: string; baseClasses: string[] }> = new Map();
     /** 存储导入的类名到原始名称和文件路径的映射 */
-    private importedClasses: Map<string, { originalName: string, filePath: string }> = new Map();
-    private typeAliases: Map<string, { originalType: string, filePath: string }>;
-    private typeVars: Map<string, { constraints: string[], filePath: string }>;
+    private importedClasses: Map<string, { originalName: string; filePath: string }> = new Map();
+    private typeAliases: Map<string, { originalType: string; filePath: string }>;
+    private typeVars: Map<string, { constraints: string[]; filePath: string }>;
     /** 存储协议类型定义 */
-    private protocols: Map<string, {
-        methods: {
-            [key: string]: {
-                params: string[],
-                returnType: string
-            }
-        },
-        filePath: string
-    }> = new Map();
+    private protocols: Map<
+        string,
+        {
+            methods: {
+                [key: string]: {
+                    params: string[];
+                    returnType: string;
+                };
+            };
+            filePath: string;
+        }
+    > = new Map();
     /** 存储字面量类型 */
-    private literalTypes: Map<string, {
-        values: (string | number | boolean)[],
-        filePath: string
-    }> = new Map();
+    private literalTypes: Map<
+        string,
+        {
+            values: (string | number | boolean)[];
+            filePath: string;
+        }
+    > = new Map();
 
     /** 私有构造函数，确保单例模式 */
     private constructor() {
@@ -64,7 +70,7 @@ export default class CustomTypes {
         }
         this.localClasses.set(className, {
             filePath,
-            baseClasses
+            baseClasses,
         });
     }
 
@@ -77,7 +83,7 @@ export default class CustomTypes {
     public addImportedClass(className: string, filePath: string, alias?: string) {
         this.importedClasses.set(alias || className, {
             originalName: className,
-            filePath
+            filePath,
         });
     }
 
@@ -95,7 +101,14 @@ export default class CustomTypes {
      * @param map 要处理的Map对象
      * @param filePath 要移除的文件路径
      */
-    private removeFromMap(map: Map<string, { filePath: string, baseClasses?: string[] } | { originalName: string, filePath: string }>, filePath: string) {
+    private removeFromMap(
+        map: Map<
+            string,
+            | { filePath: string; baseClasses?: string[] }
+            | { originalName: string; filePath: string }
+        >,
+        filePath: string
+    ) {
         for (const [className, value] of map.entries()) {
             if ('filePath' in value && value.filePath === filePath) {
                 map.delete(className);
@@ -200,12 +213,16 @@ export default class CustomTypes {
     }
 
     /** 添加协议类型 */
-    public addProtocol(name: string, methods: {
-        [key: string]: {
-            params: string[],
-            returnType: string
-        }
-    }, filePath: string) {
+    public addProtocol(
+        name: string,
+        methods: {
+            [key: string]: {
+                params: string[];
+                returnType: string;
+            };
+        },
+        filePath: string
+    ) {
         this.protocols.set(name, { methods, filePath });
     }
 
@@ -217,53 +234,59 @@ export default class CustomTypes {
     /**
      * 获取所有本地类的Map
      */
-    public getLocalClasses(): Map<string, { filePath: string, baseClasses: string[] }> {
+    public getLocalClasses(): Map<string, { filePath: string; baseClasses: string[] }> {
         return this.localClasses;
     }
 
     /**
      * 获取所有导入类的Map
      */
-    public getImportedClasses(): Map<string, { originalName: string, filePath: string }> {
+    public getImportedClasses(): Map<string, { originalName: string; filePath: string }> {
         return this.importedClasses;
     }
 
     /**
      * 获取所有类型别名的Map
      */
-    public getTypeAliases(): Map<string, { originalType: string, filePath: string }> {
+    public getTypeAliases(): Map<string, { originalType: string; filePath: string }> {
         return this.typeAliases;
     }
 
     /**
      * 获取所有类型变量的Map
      */
-    public getTypeVars(): Map<string, { constraints: string[], filePath: string }> {
+    public getTypeVars(): Map<string, { constraints: string[]; filePath: string }> {
         return this.typeVars;
     }
 
     /**
      * 获取所有协议类型的Map
      */
-    public getProtocols(): Map<string, {
-        methods: {
-            [key: string]: {
-                params: string[],
-                returnType: string
-            }
-        },
-        filePath: string
-    }> {
+    public getProtocols(): Map<
+        string,
+        {
+            methods: {
+                [key: string]: {
+                    params: string[];
+                    returnType: string;
+                };
+            };
+            filePath: string;
+        }
+    > {
         return this.protocols;
     }
 
     /**
      * 获取所有字面量类型的Map
      */
-    public getLiteralTypes(): Map<string, {
-        values: (string | number | boolean)[],
-        filePath: string
-    }> {
+    public getLiteralTypes(): Map<
+        string,
+        {
+            values: (string | number | boolean)[];
+            filePath: string;
+        }
+    > {
         return this.literalTypes;
     }
 
@@ -272,17 +295,17 @@ export default class CustomTypes {
      * @param filePath 文件路径
      */
     public getFileTypes(filePath: string): Array<{
-        name: string,
-        isRefinable: boolean
+        name: string;
+        isRefinable: boolean;
     }> {
-        const types: Array<{ name: string, isRefinable: boolean }> = [];
+        const types: Array<{ name: string; isRefinable: boolean }> = [];
 
         // 收集本地类
         for (const [className, info] of this.localClasses) {
             if (info.filePath === filePath) {
                 types.push({
                     name: className,
-                    isRefinable: info.baseClasses.length > 0
+                    isRefinable: info.baseClasses.length > 0,
                 });
             }
         }
@@ -292,7 +315,7 @@ export default class CustomTypes {
             if (info.filePath === filePath) {
                 types.push({
                     name: aliasName,
-                    isRefinable: false
+                    isRefinable: false,
                 });
             }
         }
@@ -302,7 +325,7 @@ export default class CustomTypes {
             if (info.filePath === filePath) {
                 types.push({
                     name: varName,
-                    isRefinable: info.constraints.length > 0
+                    isRefinable: info.constraints.length > 0,
                 });
             }
         }
@@ -312,7 +335,7 @@ export default class CustomTypes {
             if (info.filePath === filePath) {
                 types.push({
                     name: protocolName,
-                    isRefinable: false
+                    isRefinable: false,
                 });
             }
         }
@@ -322,7 +345,7 @@ export default class CustomTypes {
             if (info.filePath === filePath) {
                 types.push({
                     name: literalName,
-                    isRefinable: false
+                    isRefinable: false,
                 });
             }
         }

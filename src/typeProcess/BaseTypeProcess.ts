@@ -51,9 +51,9 @@ export class BaseTypeProcess {
             removeBrackets?: boolean;
             removeTypingPrefix?: boolean;
         } = {
-                removeBrackets: true,
-                removeTypingPrefix: true,
-            }
+            removeBrackets: true,
+            removeTypingPrefix: true,
+        }
     ): string {
         let cleanName = typeName;
         // 移除方括号(如果需要)

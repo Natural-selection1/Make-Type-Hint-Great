@@ -38,7 +38,7 @@ export class ParamCompletionProvider extends BaseCompletionProvider {
             const position = doc.positionAt(precedingText.length);
             const analysis = this.typeAnalyzer.analyzeFunctionParameters({
                 line: position.line,
-                character: position.character
+                character: position.character,
             });
 
             if (analysis?.paramName) {

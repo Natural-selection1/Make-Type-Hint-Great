@@ -34,9 +34,10 @@ export class CustomTypeProcess extends BaseTypeProcess {
         // 遍历所有本地类
         for (const [className, info] of this.searchedTypes.getLocalClasses()) {
             // 如果类有基类且设置了appendBrackets，添加类型参数占位符
-            const hint = this.settings.appendBrackets && info.baseClasses.length > 0
-                ? `${className}[]`
-                : className;
+            const hint =
+                this.settings.appendBrackets && info.baseClasses.length > 0
+                    ? `${className}[]`
+                    : className;
             items.push(this.newCompletionItem(hint, sortTextPrefix, document));
         }
 
@@ -52,9 +53,7 @@ export class CustomTypeProcess extends BaseTypeProcess {
 
         // 遍历所有导入的类
         for (const [className, info] of this.searchedTypes.getImportedClasses()) {
-            const hint = this.settings.appendBrackets
-                ? `${className}[]`
-                : className;
+            const hint = this.settings.appendBrackets ? `${className}[]` : className;
             items.push(this.newCompletionItem(hint, sortTextPrefix, document));
         }
 
@@ -86,9 +85,10 @@ export class CustomTypeProcess extends BaseTypeProcess {
         // 遍历所有类型变量
         for (const [varName, info] of this.searchedTypes.getTypeVars()) {
             // 如果类型变量有约束条件，添加约束信息
-            const hint = info.constraints.length > 0
-                ? `${varName}[${info.constraints.join(', ')}]`
-                : varName;
+            const hint =
+                info.constraints.length > 0
+                    ? `${varName}[${info.constraints.join(', ')}]`
+                    : varName;
             items.push(this.newCompletionItem(hint, sortTextPrefix, document));
         }
 
@@ -139,7 +139,7 @@ export class CustomTypeProcess extends BaseTypeProcess {
             ...this.getTypeAliasHints(document),
             ...this.getTypeVarHints(document),
             ...this.getProtocolHints(document),
-            ...this.getLiteralTypeHints(document)
+            ...this.getLiteralTypeHints(document),
         ];
     }
 
@@ -154,9 +154,8 @@ export class CustomTypeProcess extends BaseTypeProcess {
         const fileTypes = this.searchedTypes.getFileTypes(filePath);
 
         for (const type of fileTypes) {
-            const hint = this.settings.appendBrackets && type.isRefinable
-                ? `${type.name}[]`
-                : type.name;
+            const hint =
+                this.settings.appendBrackets && type.isRefinable ? `${type.name}[]` : type.name;
             items.push(this.newCompletionItem(hint, sortTextPrefix, document));
         }
 

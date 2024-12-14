@@ -121,17 +121,17 @@ export class CustomTypeSearch {
     public watchWorkspace() {
         const watcher = vscode.workspace.createFileSystemWatcher('**/*.py');
 
-        watcher.onDidChange(async (uri) => {
+        watcher.onDidChange(async uri => {
             const content = await this.readFile(uri);
             this.parseFileContent(content, uri.fsPath);
         });
 
-        watcher.onDidCreate(async (uri) => {
+        watcher.onDidCreate(async uri => {
             const content = await this.readFile(uri);
             this.parseFileContent(content, uri.fsPath);
         });
 
-        watcher.onDidDelete((uri) => {
+        watcher.onDidDelete(uri => {
             this.cacheService.clearCache(uri.fsPath);
             this.searchedTypes.removeAllFileData(uri.fsPath);
         });
