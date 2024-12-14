@@ -54,7 +54,7 @@
 	"scripts": {
 		"package": "vsce package",
 		"publish": "vsce publish",
-		"vscode:prepublish": "npm run rebuild && npm run compile",
+		"vscode:prepublish": "npm run format && npm run rebuild && npm run compile",
 		"rebuild": "electron-rebuild -f -w tree-sitter -v 30.4.0 && electron-rebuild -f -w tree-sitter-python -v 30.4.0",
 		"lint": "eslint --fix --ext .ts .",
 		"compile": "webpack --mode production",
