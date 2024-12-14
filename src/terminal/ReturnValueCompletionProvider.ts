@@ -7,7 +7,7 @@ import {
     TextLine,
     CompletionItem,
 } from 'vscode';
-import { BaseCompletionProvider } from '../BaseCompletionProvider';
+import { BaseCompletionProvider } from '../InitCompletionProvider';
 import { returnHintTrigger, BuiltinTypes, getBaseType } from '../typeData/BaseTypes';
 
 /**

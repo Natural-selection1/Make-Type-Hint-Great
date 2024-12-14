@@ -7,7 +7,7 @@ import {
     Range,
     CompletionItem,
 } from 'vscode';
-import { BaseCompletionProvider } from '../BaseCompletionProvider';
+import { BaseCompletionProvider } from '../InitCompletionProvider';
 import { paramHintTrigger } from '../typeData/BaseTypes';
 
 /**

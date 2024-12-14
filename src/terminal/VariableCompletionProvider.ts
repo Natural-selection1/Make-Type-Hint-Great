@@ -6,7 +6,7 @@ import {
     CompletionList,
     CompletionItem,
 } from 'vscode';
-import { BaseCompletionProvider } from '../BaseCompletionProvider';
+import { BaseCompletionProvider } from '../InitCompletionProvider';
 import { variableHintTrigger } from '../typeData/BaseTypes';
 
 /**
