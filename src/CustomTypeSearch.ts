@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { ASTService } from './services/ASTService';
 import { CacheService } from './services/CacheService';
-import SearchedTypes from './typeData/SearchedTypes';
+import CustomTypes from './typeData/CustomTypes';
 import { TypeAnalyzer } from './services/TypeAnalyzer';
 
 interface ImportedClass {
@@ -18,7 +18,7 @@ export class TypeSearch {
     /** 单例模式实例 */
     private static instance: TypeSearch;
     /** 用于存储搜索到的类型信息 */
-    private searchedTypes: SearchedTypes;
+    private searchedTypes: CustomTypes;
     /** AST服务 */
     private astService: ASTService;
     /** 缓存服务 */
@@ -26,7 +26,7 @@ export class TypeSearch {
 
     /** 私有构造函数，确保单例模式 */
     private constructor() {
-        this.searchedTypes = SearchedTypes.getInstance();
+        this.searchedTypes = CustomTypes.getInstance();
         this.astService = new ASTService();
         this.cacheService = new CacheService();
     }

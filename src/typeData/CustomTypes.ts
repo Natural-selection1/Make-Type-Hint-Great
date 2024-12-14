@@ -2,21 +2,23 @@
  * SearchedTypes类负责存储和管理从Python文件中收集到的类信息
  * 包括本地定义的类和导入的类
  */
-export default class SearchedTypes {
+export default class CustomTypes {
     /** 单例模式实例 */
-    private static instance: SearchedTypes;
+    private static instance: CustomTypes;
     /** 存储本地定义的类名到文件路径的映射 */
-    private localClasses: Map<string, {filePath: string, baseClasses: string[]}> = new Map();
+    private localClasses: Map<string, { filePath: string, baseClasses: string[] }> = new Map();
     /** 存储导入的类名到文件路径的映射 */
-    private importedClasses: Map<string, {originalName: string, filePath: string}> = new Map();
-    private typeAliases: Map<string, {originalType: string, filePath: string}>;
-    private typeVars: Map<string, {constraints: string[], filePath: string}>;
+    private importedClasses: Map<string, { originalName: string, filePath: string }> = new Map();
+    private typeAliases: Map<string, { originalType: string, filePath: string }>;
+    private typeVars: Map<string, { constraints: string[], filePath: string }>;
     /** 存储协议类型定义 */
     private protocols: Map<string, {
-        methods: {[key: string]: {
-            params: string[],
-            returnType: string
-        }},
+        methods: {
+            [key: string]: {
+                params: string[],
+                returnType: string
+            }
+        },
         filePath: string
     }> = new Map();
     /** 存储字面量类型 */
@@ -35,11 +37,11 @@ export default class SearchedTypes {
      * 获取SearchedTypes的单例实例
      * @returns SearchedTypes实例
      */
-    public static getInstance(): SearchedTypes {
-        if (!SearchedTypes.instance) {
-            SearchedTypes.instance = new SearchedTypes();
+    public static getInstance(): CustomTypes {
+        if (!CustomTypes.instance) {
+            CustomTypes.instance = new CustomTypes();
         }
-        return SearchedTypes.instance;
+        return CustomTypes.instance;
     }
 
     /**
@@ -85,7 +87,7 @@ export default class SearchedTypes {
      * @param map 要处理的Map对象
      * @param filePath 要移除的文件路径
      */
-    private removeFromMap(map: Map<string, {filePath: string, baseClasses?: string[]} | {originalName: string, filePath: string}>, filePath: string) {
+    private removeFromMap(map: Map<string, { filePath: string, baseClasses?: string[] } | { originalName: string, filePath: string }>, filePath: string) {
         for (const [className, value] of map.entries()) {
             if ('filePath' in value && value.filePath === filePath) {
                 map.delete(className);
@@ -139,7 +141,7 @@ export default class SearchedTypes {
      * @param filePath 定义该类型的文件路径
      */
     public addTypeAlias(name: string, originalType: string, filePath: string) {
-        this.typeAliases.set(name, {originalType, filePath});
+        this.typeAliases.set(name, { originalType, filePath });
     }
 
     /**
@@ -149,7 +151,7 @@ export default class SearchedTypes {
      * @param filePath 定义该类型的文件路径
      */
     public addTypeVar(name: string, constraints: string[], filePath: string) {
-        this.typeVars.set(name, {constraints, filePath});
+        this.typeVars.set(name, { constraints, filePath });
     }
 
     /**
@@ -190,43 +192,45 @@ export default class SearchedTypes {
     }
 
     /** 添加协议类型 */
-    public addProtocol(name: string, methods: {[key: string]: {
-        params: string[],
-        returnType: string
-    }}, filePath: string) {
-        this.protocols.set(name, {methods, filePath});
+    public addProtocol(name: string, methods: {
+        [key: string]: {
+            params: string[],
+            returnType: string
+        }
+    }, filePath: string) {
+        this.protocols.set(name, { methods, filePath });
     }
 
     /** 添加字面量类型 */
     public addLiteralType(name: string, values: (string | number | boolean)[], filePath: string) {
-        this.literalTypes.set(name, {values, filePath});
+        this.literalTypes.set(name, { values, filePath });
     }
 
     /**
      * 获取所有本地类的Map
      */
-    public getLocalClasses(): Map<string, {filePath: string, baseClasses: string[]}> {
+    public getLocalClasses(): Map<string, { filePath: string, baseClasses: string[] }> {
         return this.localClasses;
     }
 
     /**
      * 获取所有导入类的Map
      */
-    public getImportedClasses(): Map<string, {originalName: string, filePath: string}> {
+    public getImportedClasses(): Map<string, { originalName: string, filePath: string }> {
         return this.importedClasses;
     }
 
     /**
      * 获取所有类型别名的Map
      */
-    public getTypeAliases(): Map<string, {originalType: string, filePath: string}> {
+    public getTypeAliases(): Map<string, { originalType: string, filePath: string }> {
         return this.typeAliases;
     }
 
     /**
      * 获取所有类型变量的Map
      */
-    public getTypeVars(): Map<string, {constraints: string[], filePath: string}> {
+    public getTypeVars(): Map<string, { constraints: string[], filePath: string }> {
         return this.typeVars;
     }
 
@@ -234,10 +238,12 @@ export default class SearchedTypes {
      * 获取所有协议类型的Map
      */
     public getProtocols(): Map<string, {
-        methods: {[key: string]: {
-            params: string[],
-            returnType: string
-        }},
+        methods: {
+            [key: string]: {
+                params: string[],
+                returnType: string
+            }
+        },
         filePath: string
     }> {
         return this.protocols;
@@ -261,7 +267,7 @@ export default class SearchedTypes {
         name: string,
         isRefinable: boolean
     }> {
-        const types: Array<{name: string, isRefinable: boolean}> = [];
+        const types: Array<{ name: string, isRefinable: boolean }> = [];
 
         // 收集本地类
         for (const [className, info] of this.localClasses) {

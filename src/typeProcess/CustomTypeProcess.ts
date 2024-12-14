@@ -1,18 +1,18 @@
 import { CompletionItem, TextDocument } from 'vscode';
 import { BaseTypeProcess } from './BaseTypeProcess';
 import { TypeHintSettings } from '../settings';
-import SearchedTypes from '../typeData/SearchedTypes';
+import CustomTypes from '../typeData/CustomTypes';
 
 /**
  * 自定义类型处理中间件
  * 处理所有从Python文件中收集到的自定义类型
  */
 export class CustomTypeProcess extends BaseTypeProcess {
-    private searchedTypes: SearchedTypes;
+    private searchedTypes: CustomTypes;
 
     constructor(settings: TypeHintSettings, itemSortPrefix: number = 80) {
         super(settings, itemSortPrefix);
-        this.searchedTypes = SearchedTypes.getInstance();
+        this.searchedTypes = CustomTypes.getInstance();
     }
 
     /**
