@@ -15,6 +15,7 @@ import {
 } from '../typeData/BaseTypes';
 import { TypeHintSettings } from '../settings';
 import { AutoImport } from '../terminal/AutoImport';
+import { TypeCache } from './TypeCache';
 
 /**
  * 基础类型处理中间件
@@ -30,10 +31,12 @@ import { AutoImport } from '../terminal/AutoImport';
 export class BaseTypeProcess {
     protected settings: TypeHintSettings;
     protected itemSortPrefix: number;
+    protected typeCache: TypeCache;
 
     constructor(settings: TypeHintSettings, itemSortPrefix: number = 90) {
         this.settings = settings;
         this.itemSortPrefix = itemSortPrefix;
+        this.typeCache = TypeCache.getInstance();
     }
 
     /**
@@ -174,63 +177,56 @@ export class BaseTypeProcess {
     }
 
     /**
-     * 获取内置类型的提示
-     *
-     * @param document 当前文档
-     * @returns 内置类型的自动完成项数组
+     * 获取内置类型的提示(添加缓存)
      */
     public getBuiltinHints(document: TextDocument): CompletionItem[] {
-        const items: CompletionItem[] = [];
-        const sortTextPrefix = this.itemSortPrefix.toString();
+        return this.typeCache.getOrCreate('builtin', document, () => {
+            const items: CompletionItem[] = [];
+            const sortTextPrefix = this.itemSortPrefix.toString();
 
-        // 遍历所有内置类型
-        Object.values(BuiltinTypes).forEach((typeName: string) => {
-            const type = getBuiltinType()[typeName];
-            // 根据设置决定是否添加方括号
-            // 如果类型是可细化的且设置了appendBrackets，则添加[]
-            const hint =
-                this.settings.appendBrackets && type.category === TypeCategory.Refinable
-                    ? `${typeName}[]`
-                    : typeName;
-            items.push(this.newCompletionItem(hint, sortTextPrefix, document));
+            Object.values(BuiltinTypes).forEach((typeName: string) => {
+                const type = getBuiltinType()[typeName];
+                const hint =
+                    this.settings.appendBrackets && type.category === TypeCategory.Refinable
+                        ? `${typeName}[]`
+                        : typeName;
+                items.push(this.newCompletionItem(hint, sortTextPrefix, document));
+            });
+
+            return items;
         });
-
-        return items;
     }
 
     /**
-     * 获取typing模块的类型提示
-     *
-     * @param document 当前文档
-     * @returns typing模块类型的自动完成项数组
+     * 获取typing模块的类型提示(添加缓存)
      */
     public getTypingHints(document: TextDocument): CompletionItem[] {
-        const items: CompletionItem[] = [];
-        // 排序前缀加1，确保typing类型排在内置类型后面
-        const sortTextPrefix = (this.itemSortPrefix + 1).toString();
+        return this.typeCache.getOrCreate('typing', document, () => {
+            const items: CompletionItem[] = [];
+            const sortTextPrefix = (this.itemSortPrefix + 1).toString();
 
-        // 遍历所有typing模块类型
-        Object.values(TypingTypes).forEach((typeName: string) => {
-            const type = getTypingType()[typeName];
-            // 根据设置决定是否添加方括号
-            // 如果类型是可细化的且设置了appendBrackets，则添加[]
-            const hint =
-                this.settings.appendBrackets && type.category === TypeCategory.Refinable
-                    ? `${typeName}[]`
-                    : typeName;
-            items.push(this.newCompletionItem(hint, sortTextPrefix, document));
+            Object.values(TypingTypes).forEach((typeName: string) => {
+                const type = getTypingType()[typeName];
+                const hint =
+                    this.settings.appendBrackets && type.category === TypeCategory.Refinable
+                        ? `${typeName}[]`
+                        : typeName;
+                items.push(this.newCompletionItem(hint, sortTextPrefix, document));
+            });
+
+            return items;
         });
-
-        return items;
     }
 
     /**
-     * 将类型提示添加到自动完成项数组
-     *
-     * @param typeHints 类型提示数组
-     * @param completionItems 目标自动完成项数组
-     * @param firstItemSelected 是否选中第一项
-     * @param document 当前文档
+     * 清除文档相关的缓存
+     */
+    public clearCache(document: TextDocument): void {
+        this.typeCache.clearDocumentCache(document);
+    }
+
+    /**
+     * 将类型提示添加到自动完成项数组(优化缓存键生成)
      */
     public pushHintsToItems(
         typeHints: string[],
@@ -238,21 +234,26 @@ export class BaseTypeProcess {
         firstItemSelected: boolean,
         document: TextDocument
     ) {
-        const sortTextPrefix = this.itemSortPrefix.toString();
+        const cacheKey = `hints:${typeHints.join(',')}:${firstItemSelected}`;
+        const items = this.typeCache.getOrCreate(cacheKey, document, () => {
+            const newItems: CompletionItem[] = [];
+            const sortTextPrefix = this.itemSortPrefix.toString();
 
-        // 添加第一个类型提示
-        // 如果firstItemSelected为true，则创建一个被选中的项
-        // 否则创建普通的自动完成项
-        completionItems.push(
-            firstItemSelected
-                ? this.selectedCompletionItem(typeHints[0], '0b', document)
-                : this.newCompletionItem(typeHints[0], sortTextPrefix, document)
-        );
+            if (typeHints.length > 0) {
+                newItems.push(
+                    firstItemSelected
+                        ? this.selectedCompletionItem(typeHints[0], '0b', document)
+                        : this.newCompletionItem(typeHints[0], sortTextPrefix, document)
+                );
 
-        // 添加剩余的类型提示
-        // 从索引1开始，因为第一项已经添加
-        for (let i = 1; i < typeHints.length; i++) {
-            completionItems.push(this.newCompletionItem(typeHints[i], sortTextPrefix, document));
-        }
+                for (let i = 1; i < typeHints.length; i++) {
+                    newItems.push(this.newCompletionItem(typeHints[i], sortTextPrefix, document));
+                }
+            }
+
+            return newItems;
+        });
+
+        completionItems.push(...items);
     }
 }

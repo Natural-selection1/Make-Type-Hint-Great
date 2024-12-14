@@ -1,3 +1,5 @@
+import { EventEmitter } from 'vscode';
+
 /**
  * CustomTypes类负责存储和管理从Python文件中收集到的类型信息
  * 包括:
@@ -41,6 +43,8 @@ export default class CustomTypes {
         }
     > = new Map();
 
+    private typesChangedEmitter = new EventEmitter<void>();
+
     /** 私有构造函数，确保单例模式 */
     private constructor() {
         this.typeAliases = new Map();
@@ -72,6 +76,7 @@ export default class CustomTypes {
             filePath,
             baseClasses,
         });
+        this.notifyTypesChanged();
     }
 
     /**
@@ -85,6 +90,7 @@ export default class CustomTypes {
             originalName: className,
             filePath,
         });
+        this.notifyTypesChanged();
     }
 
     /**
@@ -94,6 +100,7 @@ export default class CustomTypes {
     public removeFileClasses(filePath: string) {
         this.removeFromMap(this.localClasses, filePath);
         this.removeFromMap(this.importedClasses, filePath);
+        this.notifyTypesChanged();
     }
 
     /**
@@ -163,6 +170,7 @@ export default class CustomTypes {
      */
     public addTypeAlias(name: string, originalType: string, filePath: string) {
         this.typeAliases.set(name, { originalType, filePath });
+        this.notifyTypesChanged();
     }
 
     /**
@@ -173,6 +181,7 @@ export default class CustomTypes {
      */
     public addTypeVar(name: string, constraints: string[], filePath: string) {
         this.typeVars.set(name, { constraints, filePath });
+        this.notifyTypesChanged();
     }
 
     /**
@@ -210,6 +219,8 @@ export default class CustomTypes {
                 this.literalTypes.delete(name);
             }
         }
+
+        this.notifyTypesChanged();
     }
 
     /** 添加协议类型 */
@@ -224,11 +235,13 @@ export default class CustomTypes {
         filePath: string
     ) {
         this.protocols.set(name, { methods, filePath });
+        this.notifyTypesChanged();
     }
 
     /** 添加字面量类型 */
     public addLiteralType(name: string, values: (string | number | boolean)[], filePath: string) {
         this.literalTypes.set(name, { values, filePath });
+        this.notifyTypesChanged();
     }
 
     /**
@@ -351,5 +364,13 @@ export default class CustomTypes {
         }
 
         return types;
+    }
+
+    public onTypesChanged(listener: () => void): void {
+        this.typesChangedEmitter.event(listener);
+    }
+
+    private notifyTypesChanged(): void {
+        this.typesChangedEmitter.fire();
     }
 }
