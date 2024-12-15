@@ -10,7 +10,7 @@ import { TypeCategory } from '../typeData/BaseTypes';
  */
 export class CustomTypeProcess extends BaseTypeProcess {
     private searchedTypes: CustomTypes;
-    private static TYPE_SOURCE = '[Custom]';
+    private static TYPE_SOURCE = '[custom]';
 
     constructor(settings: TypeHintSettings, itemSortPrefix: number = 80) {
         super(settings, itemSortPrefix);
@@ -27,7 +27,7 @@ export class CustomTypeProcess extends BaseTypeProcess {
         detail?: string,
         isRefinable: boolean = false
     ): CompletionItem {
-        const item = new CompletionItem(this.labelFor(hint), CompletionItemKind.TypeParameter);
+        const item = new CompletionItem(hint.trim(), CompletionItemKind.TypeParameter);
         item.sortText = `${sortTextPrefix}${hint}`;
         item.detail = detail || CustomTypeProcess.TYPE_SOURCE;
 
