@@ -47,7 +47,7 @@ export class CustomTypeSearch {
             return;
         }
 
-        console.log(`Processing file: ${document.uri.fsPath}`);
+        // console.log(`Processing file: ${document.uri.fsPath}`);
         const content = document.getText();
         this.parseFileContent(content, document.uri.fsPath);
     }
@@ -58,7 +58,7 @@ export class CustomTypeSearch {
      * @param filePath 文件路径
      */
     private parseFileContent(content: string, filePath: string) {
-        console.log(`Parsing content for ${filePath}`);
+        // console.log(`Parsing content for ${filePath}`);
         const tree = this.astService.parseCode(content);
         this.cacheService.cacheTree(filePath, tree);
 
@@ -66,7 +66,6 @@ export class CustomTypeSearch {
 
         // 处理类定义
         const classNodes = this.astService.findAllClassDefinitions();
-        console.log(`Found ${classNodes.length} class definitions in ${filePath}`);
         for (const node of classNodes) {
             const nameNode = node.children.find(child => child.type === 'identifier');
             if (nameNode) {
@@ -91,7 +90,12 @@ export class CustomTypeSearch {
         // 处理类型变量
         const typeVars = typeAnalyzer.analyzeTypeVars();
         for (const { name, constraints } of typeVars) {
-            this.searchedTypes.addTypeVar(name, constraints, filePath);
+            // 过滤掉空的或只包含空白字符的类型变量名以及super
+            const trimmedName = name.trim();
+            if (!trimmedName || trimmedName === 'super') {
+                continue;
+            }
+            this.searchedTypes.addTypeVar(trimmedName, constraints, filePath);
         }
 
         // 处理协议类型

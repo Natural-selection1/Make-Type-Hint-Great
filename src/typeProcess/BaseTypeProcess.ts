@@ -256,4 +256,49 @@ export class BaseTypeProcess {
 
         completionItems.push(...items);
     }
+
+    /**
+     * 处理节点的通用方法
+     */
+    protected processNode(node: any): void {
+        if (!node) return;
+
+        // 根据节点类型进行相应处理
+        switch (node.type) {
+            case 'Call':
+                this.processCallNode(node);
+                break;
+            case 'Name':
+                this.processNameNode(node);
+                break;
+            // 可以添加其他节点类型的处理
+            default:
+                break;
+        }
+    }
+
+    /**
+     * 处理调用节点
+     */
+    protected processCallNode(node: any): void {
+        // 基类中的默认实现
+    }
+
+    /**
+     * 处理名称节点
+     */
+    protected processNameNode(node: any): void {
+        // 基类中的默认实现
+    }
+
+    // 修改 processSuperCall 方法
+    protected processSuperCall(node: any): void {
+        if (!node) return;
+
+        if (node.args) {
+            node.args.forEach((arg: any) => {
+                this.processNode(arg);
+            });
+        }
+    }
 }

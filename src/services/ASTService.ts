@@ -7,6 +7,29 @@ import type { AST, ImportNode, ImportStatementNode } from './types';
 export class ASTService extends AST4Init {
     private ast4Import: AST4Import | null = null;
 
+    // #region 此处委托给ASTAutoImport
+    public findAllImports(): SyntaxNode[] {
+        if (!this.tree || !this.ast4Import) return [];
+        return this.ast4Import.findAllImports(this.tree.rootNode);
+    }
+
+    public findTypingImport(ast: AST, typeName: string): ImportNode | null {
+        return this.ast4Import?.findTypingImport(ast, typeName) || null;
+    }
+
+    public findTypingImportStatement(ast: AST): ImportStatementNode | null {
+        return this.ast4Import?.findTypingImportStatement(ast) || null;
+    }
+
+    public addTypeToImport(importNode: ImportStatementNode, typeName: string): string {
+        return this.ast4Import?.addTypeToImport(importNode, typeName) || '';
+    }
+
+    public getImportedTypes(importStatement: ImportStatementNode): string[] {
+        return this.ast4Import?.getImportedTypes(importStatement) || [];
+    }
+    //#endregion
+
     /**
      * 解析源代码
      */
@@ -167,26 +190,21 @@ export class ASTService extends AST4Init {
         return values;
     }
 
-    // #region 此处委托给ASTAutoImport
-    public findAllImports(): SyntaxNode[] {
-        if (!this.tree || !this.ast4Import) return [];
-        return this.ast4Import.findAllImports(this.tree.rootNode);
-    }
 
-    public findTypingImport(ast: AST, typeName: string): ImportNode | null {
-        return this.ast4Import?.findTypingImport(ast, typeName) || null;
-    }
 
-    public findTypingImportStatement(ast: AST): ImportStatementNode | null {
-        return this.ast4Import?.findTypingImportStatement(ast) || null;
-    }
+    /**
+     * 查找所有 TypeVar 节点
+     */
+    public findTypeVarNodes(): SyntaxNode[] {
+        return this.findNodes((node: SyntaxNode) => {
+            if (node.type !== 'call') return false;
 
-    public addTypeToImport(importNode: ImportStatementNode, typeName: string): string {
-        return this.ast4Import?.addTypeToImport(importNode, typeName) || '';
-    }
+            // 检查是否是 TypeVar 调用
+            const funcName = node.children.find(
+                (child: SyntaxNode) => child.type === 'identifier'
+            )?.text;
 
-    public getImportedTypes(importStatement: ImportStatementNode): string[] {
-        return this.ast4Import?.getImportedTypes(importStatement) || [];
+            return funcName === 'TypeVar';
+        });
     }
-    //#endregion
 }

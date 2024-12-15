@@ -143,100 +143,154 @@ export class TypeAnalyzer {
         const importNodes = this.astService.findAllImports();
 
         for (const node of importNodes) {
-            if (node.type === 'import_statement') {
-                this.analyzeImportStatement(node, results);
-            } else if (node.type === 'import_from_statement') {
-                this.analyzeFromImportStatement(node, results);
+            if (node.type === 'import_from_statement') {
+                const moduleNode = node.children.find(child => child.type === 'dotted_name');
+                const importList = node.children.find(child => child.type === 'import_list');
+
+                if (moduleNode && importList) {
+                    const modulePath = moduleNode.text;
+
+                    for (const importItem of importList.children) {
+                        if (importItem.type === 'identifier') {
+                            const name = importItem.text;
+                            // 检查是否是类型相关的导入
+                            if (this.isClassName(name) || this.isTypingRelated(name, modulePath)) {
+                                results.push({
+                                    className: name,
+                                    source: modulePath,
+                                });
+                            }
+                        }
+                    }
+                }
             }
         }
 
         return results;
     }
 
-    private analyzeImportStatement(node: SyntaxNode, results: ImportResult[]) {
-        for (const child of node.children) {
-            if (child.type === 'dotted_name') {
-                const className = child.text.split('.').pop() || '';
-                if (this.isClassName(className)) {
-                    results.push({
-                        className,
-                        source: child.text,
-                    });
-                }
-            }
-        }
-    }
-
-    private analyzeFromImportStatement(node: SyntaxNode, results: ImportResult[]) {
-        const moduleNode = node.children.find(child => child.type === 'dotted_name');
-        const importedNames = node.children.find(child => child.type === 'import_list');
-
-        if (importedNames && moduleNode) {
-            const modulePath = moduleNode.text;
-
-            for (const name of importedNames.children) {
-                if (name.type === 'aliased_import') {
-                    const originalName =
-                        name.children.find(child => child.type === 'identifier')?.text || '';
-                    const aliasName = name.children
-                        .find(child => child.type === 'alias')
-                        ?.children.find(child => child.type === 'identifier')?.text;
-
-                    if (this.isClassName(originalName)) {
-                        results.push({
-                            className: originalName,
-                            source: modulePath,
-                        });
-                        if (aliasName && this.isClassName(aliasName)) {
-                            results.push({
-                                className: aliasName,
-                                source: modulePath,
-                            });
-                        }
-                    }
-                } else if (name.type === 'identifier') {
-                    const className = name.text;
-                    if (this.isClassName(className)) {
-                        results.push({
-                            className,
-                            source: modulePath,
-                        });
-                    }
-                }
-            }
-        }
-    }
-
     /**
-     * 判断一个标识符是否为类名
+     * 判断是否为类名（首字母大写）
      */
-    public isClassName(name: string): boolean {
+    private isClassName(name: string): boolean {
         return /^[A-Z]/.test(name);
     }
 
+    /**
+     * 判断是否是 typing 相关的类型
+     */
+    private isTypingRelated(name: string, modulePath: string): boolean {
+        const typingModules = ['typing', 'collections.abc', 'types'];
+        if (typingModules.includes(modulePath)) {
+            return true;
+        }
+
+        // 其他可能的类型相关模块
+        const typeRelatedModules = ['abc', 'dataclasses', 'enum'];
+        return typeRelatedModules.includes(modulePath);
+    }
+
+    /**
+     * 分析类型变量定义
+     */
+    public analyzeTypeVars() {
+        const typeVars: { name: string; constraints: string[] }[] = [];
+        const nodes = this.astService.findTypeVarNodes();
+
+        for (const node of nodes) {
+            // 获取赋值语句的左侧（变量名）
+            const assignmentNode = node.parent;
+            if (assignmentNode?.type !== 'assignment') continue;
+
+            const nameNode = assignmentNode.children.find(
+                (child: SyntaxNode) => child.type === 'identifier'
+            );
+            if (!nameNode || !nameNode.text) continue;
+
+            const name = nameNode.text.trim();
+            if (!name) continue;
+
+            // 获取 TypeVar 的约束条件
+            const constraints = this.getTypeVarConstraints(node);
+            typeVars.push({ name, constraints });
+        }
+
+        return typeVars;
+    }
+
+    /**
+     * 分析类型别名定义
+     */
     public analyzeTypeAliases() {
-        // 分析类型别名定义
         const assignments = this.astService.findNodes(
             (node: SyntaxNode) => node.type === 'assignment'
         );
+
         return assignments
-            .filter(node => this.isTypeAlias(node))
+            .filter(node => {
+                // 只处理模块级别的赋值
+                if (node.parent?.type !== 'module') return false;
+
+                const target = this.getAssignmentTarget(node);
+                if (!target) return false;
+
+                // 获取赋值的右侧表达式
+                const valueNode = node.children.find(child => child.type === 'expression');
+                if (!valueNode) return false;
+
+                // 检查是否是类型别名定义
+                return this.isTypeAliasDefinition(valueNode);
+            })
             .map(node => ({
                 name: this.getAssignmentTarget(node),
                 originalType: this.getAssignmentValue(node),
             }));
     }
 
-    public analyzeTypeVars() {
-        // 分析TypeVar定义
-        const typeVarCalls = this.astService
-            .findNodes((node: SyntaxNode) => node.type === 'call')
-            .filter(node => this.isTypeVarDefinition(node));
+    /**
+     * 判断是否是类型别名定义
+     */
+    private isTypeAliasDefinition(node: SyntaxNode): boolean {
+        const text = node.text;
 
-        return typeVarCalls.map(node => ({
-            name: this.getTypeVarName(node),
-            constraints: this.getTypeVarConstraints(node),
-        }));
+        // 检查是否使用了类型相关的标识符
+        const typePatterns = [
+            'Literal[',
+            'Union[',
+            'Dict[',
+            'List[',
+            'Callable[',
+            'Optional[',
+            'Sequence[',
+            'Mapping[',
+            'Set[',
+            'Tuple[',
+            'Type[',
+            'Any',
+            'TypeVar(',
+        ];
+
+        return typePatterns.some(pattern => text.includes(pattern));
+    }
+
+    /**
+     * 获取 TypeVar 的约束条件
+     */
+    private getTypeVarConstraints(node: SyntaxNode): string[] {
+        const constraints: string[] = [];
+        const args = node.children.find(child => child.type === 'argument_list');
+
+        if (args) {
+            // 跳过第一个参数（TypeVar 的名称）
+            const constraintNodes = args.children.slice(1);
+            for (const constraintNode of constraintNodes) {
+                if (constraintNode.type === 'identifier') {
+                    constraints.push(constraintNode.text);
+                }
+            }
+        }
+
+        return constraints;
     }
 
     private getAssignmentTarget(node: SyntaxNode): string {
@@ -245,32 +299,6 @@ export class TypeAnalyzer {
 
     private getAssignmentValue(node: SyntaxNode): string {
         return node.children.find(child => child.type === 'expression')?.text || '';
-    }
-
-    private getTypeVarName(node: SyntaxNode): string {
-        return node.children.find(child => child.type === 'identifier')?.text || '';
-    }
-
-    private getTypeVarConstraints(node: SyntaxNode): string[] {
-        return []; // 实现获取约束的逻辑
-    }
-
-    private isTypeAlias(node: SyntaxNode): boolean {
-        return node.type === 'assignment' && this.isTypeAliasPattern(node);
-    }
-
-    private isTypeVarDefinition(node: SyntaxNode): boolean {
-        return node.type === 'call' && this.isTypeVarPattern(node);
-    }
-
-    private isTypeAliasPattern(node: SyntaxNode): boolean {
-        // 实现类型别名模式检查
-        return true;
-    }
-
-    private isTypeVarPattern(node: SyntaxNode): boolean {
-        // 实现 TypeVar 模式检查
-        return true;
     }
 
     /**

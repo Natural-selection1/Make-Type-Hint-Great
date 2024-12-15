@@ -20,6 +20,7 @@ export class TypeCache {
     private cacheService: CacheService;
     private customTypes: CustomTypes;
     private currentVersion: number = 0;
+    private typeVariables: Set<string> = new Set();
 
     private constructor() {
         this.cacheService = new CacheService();
@@ -80,5 +81,12 @@ export class TypeCache {
      */
     private generateCacheKey(key: string, document: TextDocument): string {
         return `${document.uri.toString()}:${key}`;
+    }
+
+    public addTypeVariable(name: string): void {
+        if (!name || name.trim().length === 0) {
+            return;
+        }
+        this.typeVariables.add(name.trim());
     }
 }
