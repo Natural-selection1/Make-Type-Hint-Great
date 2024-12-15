@@ -47,7 +47,7 @@ export class CustomTypeSearch {
             return;
         }
 
-        console.log(`Processing file: ${document.uri.fsPath}`);
+
         const content = document.getText();
         this.parseFileContent(content, document.uri.fsPath);
     }
