@@ -53,11 +53,6 @@
 					"default": true,
 					"description": "Enable custom type hints from workspace"
 				},
-				"python.typeHint.enableFileTypes": {
-					"type": "boolean",
-					"default": true,
-					"description": "Enable type hints from current file"
-				},
 				"python.typeHint.enableBaseTypes": {
 					"type": "boolean",
 					"default": true,
