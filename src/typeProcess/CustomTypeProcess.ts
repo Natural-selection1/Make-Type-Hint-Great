@@ -15,9 +15,6 @@ export class CustomTypeProcess extends BaseTypeProcess {
     private static TYPE_SOURCE = '[custom]';
     private static DEBUG_FILE = 'E:\\0000__Python_Project\\00__Make_Type_Hint_Great\\DeBug.txt';
 
-    // 添加 typeVariables 属性
-    protected typeVariables: Set<string> = new Set<string>();
-
     constructor(settings: TypeHintSettings, itemSortPrefix: number = 80) {
         super(settings, itemSortPrefix);
         this.searchedTypes = CustomTypes.getInstance();
@@ -73,6 +70,18 @@ export class CustomTypeProcess extends BaseTypeProcess {
                 debugOutput += `\n找到 ${localClassesInFile.length} 个本地类:\n`;
                 localClassesInFile.forEach(([className, info]) => {
                     debugOutput += `- 本地类: ${className}${info.baseClasses.length > 0 ? `, 继承自: ${info.baseClasses.join(', ')}` : ''}\n`;
+                    const detail = `(Local${
+                        info.baseClasses.length > 0 ? `,extends ${info.baseClasses.join(', ')}` : ''
+                    }) ${CustomTypeProcess.TYPE_SOURCE}`;
+                    items.push(
+                        this.createCustomCompletionItem(
+                            className,
+                            this.itemSortPrefix.toString(),
+                            document,
+                            detail,
+                            info.baseClasses.length > 0
+                        )
+                    );
                 });
             }
 
@@ -85,6 +94,16 @@ export class CustomTypeProcess extends BaseTypeProcess {
                 debugOutput += `找到 ${importedClassesInFile.length} 个导入的类:\n`;
                 importedClassesInFile.forEach(([className, info]) => {
                     debugOutput += `- 导入的类: ${className}, 原始名称: ${info.originalName}\n`;
+                    const detail = `(from ${info.originalName}) ${CustomTypeProcess.TYPE_SOURCE}`;
+                    items.push(
+                        this.createCustomCompletionItem(
+                            className,
+                            (this.itemSortPrefix + 1).toString(),
+                            document,
+                            detail,
+                            true
+                        )
+                    );
                 });
             }
 
@@ -97,6 +116,15 @@ export class CustomTypeProcess extends BaseTypeProcess {
                 debugOutput += `找到 ${typeAliasesInFile.length} 个类型别名:\n`;
                 typeAliasesInFile.forEach(([aliasName, info]) => {
                     debugOutput += `- 类型别名: ${aliasName}, 原始类型: ${info.originalType}\n`;
+                    const detail = `(Alias for ${info.originalType}) ${CustomTypeProcess.TYPE_SOURCE}`;
+                    items.push(
+                        this.createCustomCompletionItem(
+                            aliasName,
+                            (this.itemSortPrefix + 2).toString(),
+                            document,
+                            detail
+                        )
+                    );
                 });
             }
 
@@ -109,6 +137,18 @@ export class CustomTypeProcess extends BaseTypeProcess {
                 debugOutput += `找到 ${typeVarsInFile.length} 个类型变量:\n`;
                 typeVarsInFile.forEach(([varName, info]) => {
                     debugOutput += `- 类型变量: ${varName}${info.constraints.length > 0 ? `, 约束: ${info.constraints.join(' & ')}` : ''}\n`;
+                    const detail = `(TypeVar${
+                        info.constraints.length > 0 ? `(${info.constraints.join('&')})` : '(FREE)'
+                    }) ${CustomTypeProcess.TYPE_SOURCE}`;
+                    items.push(
+                        this.createCustomCompletionItem(
+                            varName,
+                            (this.itemSortPrefix + 3).toString(),
+                            document,
+                            detail,
+                            info.constraints.length > 0
+                        )
+                    );
                 });
             }
 
@@ -122,6 +162,15 @@ export class CustomTypeProcess extends BaseTypeProcess {
                 protocolsInFile.forEach(([protocolName, info]) => {
                     const methodCount = Object.keys(info.methods).length;
                     debugOutput += `- 协议: ${protocolName}, 包含 ${methodCount} 个方法\n`;
+                    const detail = `(Protocol) ${CustomTypeProcess.TYPE_SOURCE}`;
+                    items.push(
+                        this.createCustomCompletionItem(
+                            protocolName,
+                            (this.itemSortPrefix + 4).toString(),
+                            document,
+                            detail
+                        )
+                    );
                 });
             }
 
@@ -134,6 +183,15 @@ export class CustomTypeProcess extends BaseTypeProcess {
                 debugOutput += `找到 ${literalsInFile.length} 个字面量类型:\n`;
                 literalsInFile.forEach(([literalName, info]) => {
                     debugOutput += `- 字面量类型: ${literalName}, 值: ${info.values.join(' | ')}\n`;
+                    const detail = `(Literal: ${info.values.join('|')}) ${CustomTypeProcess.TYPE_SOURCE}`;
+                    items.push(
+                        this.createCustomCompletionItem(
+                            literalName,
+                            (this.itemSortPrefix + 5).toString(),
+                            document,
+                            detail
+                        )
+                    );
                 });
             }
 
@@ -180,38 +238,5 @@ export class CustomTypeProcess extends BaseTypeProcess {
 
             return items;
         });
-    }
-
-    /**
-     * 处理类型变量
-     */
-    protected processTypeVariable(node: any): void {
-        // 确保节点有效且有名称
-        if (!node || !node.name) {
-            return;
-        }
-
-        // 过滤掉空字符串或只包含空白字符的名称
-        const name = node.name.trim();
-        if (!name) {
-            return;
-        }
-
-        // 添加到类型变量集合中
-        this.typeVariables.add(name);
-    }
-
-    /**
-     * 重写基类的处理节点方法
-     */
-    protected processNode(node: any): void {
-        if (!node) return;
-
-        if (node.type === 'TypeVar') {
-            this.processTypeVariable(node);
-        } else {
-            // 调用基类的处理方法
-            super.processNode(node);
-        }
     }
 }

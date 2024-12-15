@@ -190,8 +190,6 @@ export class ASTService extends AST4Init {
         return values;
     }
 
-
-
     /**
      * 查找所有 TypeVar 节点
      */

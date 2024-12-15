@@ -1,13 +1,26 @@
 
-找到 1 个本地类:
-- 本地类: ClassName, 继承自: object
+找到 7 个本地类:
+- 本地类: Drawable, 继承自: Protocol
+- 本地类: Serializable, 继承自: Protocol
+- 本地类: Stack
+- 本地类: Shape, 继承自: ABC
+- 本地类: Circle, 继承自: Shape
+- 本地类: Point
+- 本地类: UserConfig, 继承自: BaseModel
+找到 3 个类型变量:
+- 类型变量: T, 约束: str & int
+- 类型变量: S
+- 类型变量: Number, 约束: int & float & Decimal
+找到 2 个协议类型:
+- 协议: Drawable, 包含 1 个方法
+- 协议: Serializable, 包含 2 个方法
 
 类型搜索总结:
-本地类: 1个
+本地类: 7个
 导入的类: 0个
 类型别名: 0个
-类型变量: 0个
-协议类型: 0个
+类型变量: 3个
+协议类型: 2个
 字面量类型: 0个
-总计: 0个类型
+总计: 12个类型
 
