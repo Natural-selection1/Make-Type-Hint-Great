@@ -89,13 +89,16 @@ export abstract class BaseCompletionProvider implements vscode.CompletionItemPro
         // 解析当前文档
         this.astService.parseCode(documentText);
 
-        // 添加自定义类型提示(优先级最高)
-        items.push(...this.customTypeProcess.getAllCustomTypeHints(doc));
+        // 添加自定义类型提示
+        if (this.settings.enableCustomTypes) {
+            items.push(...this.customTypeProcess.getAllCustomTypeHints(doc));
+        }
 
-        // 添加内置类型提示
-        items.push(...this.typeProcess.getBuiltinHints(doc));
-
-        // 添加typing模块类型提示
-        items.push(...this.typeProcess.getTypingHints(doc));
+        if (this.settings.enableBaseTypes) {
+            // 添加内置类型提示
+            items.push(...this.typeProcess.getBuiltinHints(doc));
+            // 添加typing模块类型提示
+            items.push(...this.typeProcess.getTypingHints(doc));
+        }
     }
 }
