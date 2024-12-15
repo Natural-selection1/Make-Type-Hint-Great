@@ -58,7 +58,6 @@ export class CustomTypeSearch {
      * @param filePath 文件路径
      */
     private parseFileContent(content: string, filePath: string) {
-        console.log(`Parsing content for ${filePath}`);
         const tree = this.astService.parseCode(content);
         this.cacheService.cacheTree(filePath, tree);
 
@@ -66,7 +65,6 @@ export class CustomTypeSearch {
 
         // 处理类定义
         const classNodes = this.astService.findAllClassDefinitions();
-        console.log(`Found ${classNodes.length} class definitions in ${filePath}`);
         for (const node of classNodes) {
             const nameNode = node.children.find(child => child.type === 'identifier');
             if (nameNode) {
