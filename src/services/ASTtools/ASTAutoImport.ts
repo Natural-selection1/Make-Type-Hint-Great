@@ -1,6 +1,6 @@
 import type { SyntaxNode } from 'tree-sitter';
 import type { AST, ImportNode, ImportStatementNode } from '../types';
-import { AST4Init } from './AST4Init';
+import { AST4Init } from './ASTInit';
 
 export class AST4Import extends AST4Init {
     /**

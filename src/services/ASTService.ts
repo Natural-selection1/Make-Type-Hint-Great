@@ -1,7 +1,7 @@
 import type { SyntaxNode, Tree } from 'tree-sitter';
 import { TextDocument } from 'vscode';
-import { AST4Import } from './ASTtools/AST4Import';
-import { AST4Init } from './ASTtools/AST4Init';
+import { AST4Import } from './ASTtools/ASTAutoImport';
+import { AST4Init } from './ASTtools/ASTInit';
 import type { AST, ImportNode, ImportStatementNode } from './types';
 
 export class ASTService extends AST4Init {
@@ -167,7 +167,7 @@ export class ASTService extends AST4Init {
         return values;
     }
 
-    // 导入相关的方法委托给AST4Import
+    // #region 此处委托给ASTAutoImport
     public findAllImports(): SyntaxNode[] {
         if (!this.tree || !this.ast4Import) return [];
         return this.ast4Import.findAllImports(this.tree.rootNode);
@@ -188,6 +188,5 @@ export class ASTService extends AST4Init {
     public getImportedTypes(importStatement: ImportStatementNode): string[] {
         return this.ast4Import?.getImportedTypes(importStatement) || [];
     }
-
-
+    //#endregion
 }
