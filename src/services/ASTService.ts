@@ -1,6 +1,7 @@
 import type Parser from 'tree-sitter';
 import type { SyntaxNode, Tree } from 'tree-sitter';
 import { TextDocument } from 'vscode';
+import { ASTInit } from './ASTtools/ASTInit';
 import type { AST, ImportNode, ImportStatementNode } from './types';
 
 export class ASTService {
@@ -9,27 +10,7 @@ export class ASTService {
     private sourceCode: string = '';
 
     constructor() {
-        try {
-            const Parser = require('tree-sitter');
-            const Python = require('tree-sitter-python');
-
-            this.parser = new Parser();
-            this.parser.setLanguage(Python);
-        } catch (error) {
-            console.error('Failed to initialize tree-sitter:', error);
-            // 提供后备方案
-            this.parser = {
-                parse: () => ({
-                    rootNode: {
-                        text: '',
-                        type: '',
-                        children: [],
-                        closest: () => null,
-                        descendantForPosition: () => null,
-                    },
-                }),
-            } as any;
-        }
+        this.parser = ASTInit.initParser();
     }
 
     /**
