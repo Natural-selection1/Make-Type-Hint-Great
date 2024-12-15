@@ -66,10 +66,10 @@ export class ASTService extends AST4Init {
 
         return identifier
             ? {
-                name: identifier.text,
-                type: typeAnnotation?.text,
-                value: value?.text,
-            }
+                  name: identifier.text,
+                  type: typeAnnotation?.text,
+                  value: value?.text,
+              }
             : null;
     }
 
