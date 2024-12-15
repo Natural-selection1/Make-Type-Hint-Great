@@ -88,7 +88,11 @@ export class CustomTypeSearch {
         // 处理类型变量
         const typeVars = typeAnalyzer.analyzeTypeVars();
         for (const { name, constraints } of typeVars) {
-            this.searchedTypes.addTypeVar(name, constraints, filePath);
+            const trimmedName = name.trim();
+            if (!trimmedName || trimmedName === 'super') {
+                continue;
+            }
+            this.searchedTypes.addTypeVar(trimmedName, constraints, filePath);
         }
 
         // 处理协议类型
