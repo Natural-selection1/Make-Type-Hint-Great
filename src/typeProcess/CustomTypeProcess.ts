@@ -201,29 +201,4 @@ export class CustomTypeProcess extends BaseTypeProcess {
             return items;
         });
     }
-
-    /**
-     * 获取指定文件中定义的所有类型的提示(使用缓存)
-     */
-    public getFileTypeHints(filePath: string, document: TextDocument): CompletionItem[] {
-        return this.typeCache.getOrCreate(`file:${filePath}`, document, () => {
-            const items: CompletionItem[] = [];
-            const sortTextPrefix = this.itemSortPrefix.toString();
-            const fileTypes = this.searchedTypes.getFileTypes(filePath);
-
-            for (const type of fileTypes) {
-                items.push(
-                    this.createCustomCompletionItem(
-                        type.name,
-                        sortTextPrefix,
-                        document,
-                        `${CustomTypeProcess.TYPE_SOURCE} (Defined in current file)`,
-                        type.isRefinable
-                    )
-                );
-            }
-
-            return items;
-        });
-    }
 }

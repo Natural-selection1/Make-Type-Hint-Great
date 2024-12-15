@@ -92,9 +92,6 @@ export abstract class BaseCompletionProvider implements vscode.CompletionItemPro
         // 添加自定义类型提示(优先级最高)
         items.push(...this.customTypeProcess.getAllCustomTypeHints(doc));
 
-        // 添加当前文件的类型提示
-        items.push(...this.customTypeProcess.getFileTypeHints(doc.uri.fsPath, doc));
-
         // 添加内置类型提示
         items.push(...this.typeProcess.getBuiltinHints(doc));
 
