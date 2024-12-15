@@ -58,7 +58,6 @@ export class CustomTypeSearch {
      * @param filePath 文件路径
      */
     private parseFileContent(content: string, filePath: string) {
-        // console.log(`Parsing content for ${filePath}`);
         const tree = this.astService.parseCode(content);
         this.cacheService.cacheTree(filePath, tree);
 
