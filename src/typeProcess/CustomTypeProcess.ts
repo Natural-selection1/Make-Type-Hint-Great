@@ -100,10 +100,11 @@ export class CustomTypeProcess extends BaseTypeProcess {
             for (const [className, info] of this.searchedTypes.getLocalClasses()) {
                 if (info.filePath === currentFilePath) {
                     const isRefinable = info.baseClasses.length > 0;
-                    const detail = `${CustomTypeProcess.TYPE_SOURCE} (Local${info.baseClasses.length > 0
+                    const detail = `${CustomTypeProcess.TYPE_SOURCE} (Local${
+                        info.baseClasses.length > 0
                             ? `, extends ${info.baseClasses.join(', ')}`
                             : ''
-                        })`;
+                    })`;
                     items.push(
                         this.createCustomCompletionItem(
                             className,
@@ -150,10 +151,11 @@ export class CustomTypeProcess extends BaseTypeProcess {
             // 获取类型变量
             for (const [varName, info] of this.searchedTypes.getTypeVars()) {
                 if (info.filePath === currentFilePath) {
-                    const detail = `${CustomTypeProcess.TYPE_SOURCE} (TypeVar${info.constraints.length > 0
+                    const detail = `${CustomTypeProcess.TYPE_SOURCE} (TypeVar${
+                        info.constraints.length > 0
                             ? ` bound to ${info.constraints.join(' & ')}`
                             : ''
-                        })`;
+                    })`;
                     items.push(
                         this.createCustomCompletionItem(
                             varName,
