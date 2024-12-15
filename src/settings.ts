@@ -6,6 +6,9 @@ import { workspace, EventEmitter, Event } from 'vscode';
  */
 export class TypeHintSettings {
     private _appendBrackets = true; // 是否在类型提示中添加中括号
+    private _enableCustomTypes = true; // 新增: 是否启用自定义类型提示
+    private _enableFileTypes = true; // 新增: 是否启用当前文件类型提示
+    private _enableBaseTypes = true; // 新增: 是否启用内置和typing类型提示
 
     constructor() {
         // 监听配置变更事件
@@ -19,6 +22,18 @@ export class TypeHintSettings {
     // Getter方法
     public get appendBrackets() {
         return this._appendBrackets;
+    }
+
+    public get enableCustomTypes() {
+        return this._enableCustomTypes;
+    }
+
+    public get enableFileTypes() {
+        return this._enableFileTypes;
+    }
+
+    public get enableBaseTypes() {
+        return this._enableBaseTypes;
     }
 
     /**
@@ -45,6 +60,21 @@ export class TypeHintSettings {
 
         if (appendBrackets !== undefined) {
             this._appendBrackets = appendBrackets;
+        }
+
+        const enableCustomTypes = config.get<boolean>('enableCustomTypes');
+        if (enableCustomTypes !== undefined) {
+            this._enableCustomTypes = enableCustomTypes;
+        }
+
+        const enableFileTypes = config.get<boolean>('enableFileTypes');
+        if (enableFileTypes !== undefined) {
+            this._enableFileTypes = enableFileTypes;
+        }
+
+        const enableBaseTypes = config.get<boolean>('enableBaseTypes');
+        if (enableBaseTypes !== undefined) {
+            this._enableBaseTypes = enableBaseTypes;
         }
     }
 }

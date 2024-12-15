@@ -41,12 +41,27 @@
 			}
 		],
 		"configuration": {
-			"title": "Make Type Hint Great",
+			"title": "Python Type Hint",
 			"properties": {
 				"python.typeHint.appendBrackets": {
 					"type": "boolean",
 					"default": true,
-					"description": "If enabled, append '[]' to all refinable types in completion list."
+					"description": "Whether to append brackets to refinable types"
+				},
+				"python.typeHint.enableCustomTypes": {
+					"type": "boolean",
+					"default": true,
+					"description": "Enable custom type hints from workspace"
+				},
+				"python.typeHint.enableFileTypes": {
+					"type": "boolean",
+					"default": true,
+					"description": "Enable type hints from current file"
+				},
+				"python.typeHint.enableBaseTypes": {
+					"type": "boolean",
+					"default": true,
+					"description": "Enable built-in and typing module type hints"
 				}
 			}
 		}
