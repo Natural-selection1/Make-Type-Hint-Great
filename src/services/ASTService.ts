@@ -145,64 +145,6 @@ export class ASTService {
     }
 
     /**
-     * 查找typing模块中特定类型的导入
-     */
-    public findTypingImport(ast: AST, typeName: string): ImportNode | null {
-        const imports = this.findAllImports();
-        return (
-            (imports.find(node => {
-                if (node.type !== 'import_from_statement') return false;
-                const moduleNode = node.children.find(child => child.type === 'dotted_name');
-                if (moduleNode?.text !== 'typing') return false;
-
-                const importedNames = node.children
-                    .filter(child => child.type === 'dotted_name')
-                    .map(child => child.text);
-
-                return importedNames.includes(typeName);
-            }) as ImportNode) || null
-        );
-    }
-
-    /**
-     * 查找typing模块的导入语句
-     */
-    public findTypingImportStatement(ast: AST): ImportStatementNode | null {
-        const imports = this.findAllImports();
-        const typingImport = imports.find(node => {
-            if (node.type !== 'import_from_statement') return false;
-            const moduleNode = node.children.find(child => child.type === 'dotted_name');
-            return moduleNode?.text === 'typing';
-        });
-
-        if (!typingImport) return null;
-
-        return {
-            ...typingImport,
-            start: typingImport.startIndex,
-            end: typingImport.endIndex,
-        } as ImportStatementNode;
-    }
-
-    /**
-     * 在现有导入语句中添加新类型
-     */
-    public addTypeToImport(importNode: ImportStatementNode, typeName: string): string {
-        const importText = this.sourceCode.slice(importNode.start, importNode.end);
-        const importParts = importText.split('import');
-        if (importParts.length !== 2) return importText;
-
-        const [fromPart, namesPart] = importParts;
-        const names = namesPart
-            .trim()
-            .split(',')
-            .map(n => n.trim());
-        names.push(typeName);
-
-        return `${fromPart}import ${names.join(', ')}`;
-    }
-
-    /**
      * 获取类的基类列表
      */
     public getBaseClasses(node: SyntaxNode): string[] {
@@ -314,28 +256,5 @@ export class ASTService {
         }
 
         return values;
-    }
-
-    /**
-     * 获取导入语句中的所有类型名称
-     * @param importStatement 导入语句节点
-     * @returns 类型名称数组
-     */
-    public getImportedTypes(importStatement: ImportStatementNode): string[] {
-        // 使用原始源代码而不是节点的text属性
-        const importText = this.sourceCode.slice(importStatement.start, importStatement.end);
-
-        // 匹配 from typing import 后面的内容，使用[\s\S]*来代替/s标志
-        const match = importText.match(/from\s+typing\s+import\s+([\s\S]+)$/);
-        if (!match) return [];
-
-        // 处理括号形式和普通形式
-        const importPart = match[1]
-            .replace(/[\(\)]/g, '') // 移除括号
-            .replace(/\s*,\s*/g, ',') // 标准化逗号周围的空白
-            .replace(/\n\s*/g, '') // 移除换行和缩进
-            .trim();
-
-        return importPart.split(',').filter((name: string) => name.length > 0);
     }
 }

@@ -1,6 +1,7 @@
 import { CompletionItem, TextDocument, TextEdit, Range } from 'vscode';
 import { TypingTypes } from '../typeData/BaseTypes';
 import { ASTService } from '../services/ASTService';
+import { ASTAutoImport } from '../services/ASTtools/ASTAutoImpore';
 
 export class AutoImport {
     /**
@@ -48,9 +49,10 @@ export class AutoImport {
 
         const astService = new ASTService();
         const ast = await astService.parseDocument(document);
+        const astAutoImport = new ASTAutoImport(astService, document.getText());
 
         // 检查是否已经存在typing导入
-        const existingImport = astService.findTypingImport(ast, cleanName);
+        const existingImport = astAutoImport.findTypingImport(ast, cleanName);
         if (existingImport) {
             return;
         }
@@ -58,34 +60,24 @@ export class AutoImport {
         const additionalTextEdits: TextEdit[] = [];
 
         // 查找现有的typing导入语句
-        const existingTypingImport = astService.findTypingImportStatement(ast);
+        const existingTypingImport = astAutoImport.findTypingImportStatement(ast);
 
         if (existingTypingImport) {
-            // 在现有的typing导入中添加新类型
             const range = new Range(
                 document.positionAt(existingTypingImport.start),
                 document.positionAt(existingTypingImport.end)
             );
 
-            // 获取现有导入文本
             const currentText = document.getText(range);
 
-            // 处理多行导入的情况
             if (currentText.includes('(\n')) {
-                // 多行导入格式
                 const lines = currentText.split('\n');
-                const firstLine = lines[0];
-                const lastLine = lines[lines.length - 1];
-
-                // 在第二行插入新的导入
                 lines.splice(1, 0, `    ${cleanName},`);
-
                 const newImportText = lines.join('\n');
                 additionalTextEdits.push(new TextEdit(range, newImportText));
             } else {
-                // 单行导入格式，转换为多行格式
-                const importNames = astService.getImportedTypes(existingTypingImport);
-                importNames.unshift(cleanName); // 头插法添加新类型
+                const importNames = astAutoImport.getImportedTypes(existingTypingImport);
+                importNames.unshift(cleanName);
 
                 const newImportText =
                     'from typing import (\n' +
@@ -95,7 +87,6 @@ export class AutoImport {
                 additionalTextEdits.push(new TextEdit(range, newImportText));
             }
         } else {
-            // 添加新的typing导入语句
             additionalTextEdits.push(
                 new TextEdit(new Range(0, 0, 0, 0), `from typing import ${cleanName}\n`)
             );
