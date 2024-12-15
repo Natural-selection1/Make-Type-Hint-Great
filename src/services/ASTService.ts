@@ -1,81 +1,33 @@
-import type Parser from 'tree-sitter';
 import type { SyntaxNode, Tree } from 'tree-sitter';
 import { TextDocument } from 'vscode';
+import { AST4Import } from './ASTtools/AST4Import';
+import { AST4Init } from './ASTtools/AST4Init';
 import type { AST, ImportNode, ImportStatementNode } from './types';
 
-export class ASTService {
-    private parser: Parser;
-    private tree: Tree | null = null;
-    private sourceCode: string = '';
-
-    constructor() {
-        try {
-            const Parser = require('tree-sitter');
-            const Python = require('tree-sitter-python');
-
-            this.parser = new Parser();
-            this.parser.setLanguage(Python);
-        } catch (error) {
-            console.error('Failed to initialize tree-sitter:', error);
-            // 提供后备方案
-            this.parser = {
-                parse: () => ({
-                    rootNode: {
-                        text: '',
-                        type: '',
-                        children: [],
-                        closest: () => null,
-                        descendantForPosition: () => null,
-                    },
-                }),
-            } as any;
-        }
-    }
+export class ASTService extends AST4Init {
+    private ast4Import: AST4Import | null = null;
 
     /**
      * 解析源代码
      */
-    public parseCode(sourceCode: string): Tree {
-        this.sourceCode = sourceCode;
-        this.tree = this.parser.parse(sourceCode);
-        return this.tree;
+    public override parseCode(sourceCode: string): Tree {
+        const tree = super.parseCode(sourceCode);
+        this.ast4Import = new AST4Import();
+        this.ast4Import.parseCode(sourceCode);
+        return tree;
     }
-
     /**
-     * 获取指定位置的节点
+     * 解析文档
      */
-    public getNodeAtPosition(line: number, character: number): SyntaxNode | null {
-        if (!this.tree) return null;
-
-        return this.tree.rootNode.descendantForPosition({
-            row: line,
-            column: character,
-        });
+    public override async parseDocument(document: TextDocument): Promise<AST> {
+        return super.parseDocument(document);
     }
 
     /**
      * 查找所有类定义
      */
     public findAllClassDefinitions(): SyntaxNode[] {
-        if (!this.tree) return [];
-
-        const classes: SyntaxNode[] = [];
-        this.traverseTree(this.tree.rootNode, node => {
-            if (node.type === 'class_definition') {
-                classes.push(node);
-            }
-        });
-        return classes;
-    }
-
-    /**
-     * 遍历语法树
-     */
-    private traverseTree(node: SyntaxNode, callback: (node: SyntaxNode) => void) {
-        callback(node);
-        for (const child of node.children) {
-            this.traverseTree(child, callback);
-        }
+        return this.findNodes(node => node.type === 'class_definition');
     }
 
     /**
@@ -87,21 +39,6 @@ export class ASTService {
 
         const funcNode = node.closest('function_definition');
         return funcNode || null;
-    }
-
-    /**
-     * 获取所有导入语句
-     */
-    public findAllImports(): SyntaxNode[] {
-        if (!this.tree) return [];
-
-        const imports: SyntaxNode[] = [];
-        this.traverseTree(this.tree.rootNode, node => {
-            if (node.type === 'import_statement' || node.type === 'import_from_statement') {
-                imports.push(node);
-            }
-        });
-        return imports;
     }
 
     /**
@@ -129,77 +66,11 @@ export class ASTService {
 
         return identifier
             ? {
-                  name: identifier.text,
-                  type: typeAnnotation?.text,
-                  value: value?.text,
-              }
+                name: identifier.text,
+                type: typeAnnotation?.text,
+                value: value?.text,
+            }
             : null;
-    }
-
-    /**
-     * 解析文档
-     */
-    public async parseDocument(document: TextDocument): Promise<AST> {
-        const sourceCode = document.getText();
-        return this.parseCode(sourceCode);
-    }
-
-    /**
-     * 查找typing模块中特定类型的导入
-     */
-    public findTypingImport(ast: AST, typeName: string): ImportNode | null {
-        const imports = this.findAllImports();
-        return (
-            (imports.find(node => {
-                if (node.type !== 'import_from_statement') return false;
-                const moduleNode = node.children.find(child => child.type === 'dotted_name');
-                if (moduleNode?.text !== 'typing') return false;
-
-                const importedNames = node.children
-                    .filter(child => child.type === 'dotted_name')
-                    .map(child => child.text);
-
-                return importedNames.includes(typeName);
-            }) as ImportNode) || null
-        );
-    }
-
-    /**
-     * 查找typing模块的导入语句
-     */
-    public findTypingImportStatement(ast: AST): ImportStatementNode | null {
-        const imports = this.findAllImports();
-        const typingImport = imports.find(node => {
-            if (node.type !== 'import_from_statement') return false;
-            const moduleNode = node.children.find(child => child.type === 'dotted_name');
-            return moduleNode?.text === 'typing';
-        });
-
-        if (!typingImport) return null;
-
-        return {
-            ...typingImport,
-            start: typingImport.startIndex,
-            end: typingImport.endIndex,
-        } as ImportStatementNode;
-    }
-
-    /**
-     * 在现有导入语句中添加新类型
-     */
-    public addTypeToImport(importNode: ImportStatementNode, typeName: string): string {
-        const importText = this.sourceCode.slice(importNode.start, importNode.end);
-        const importParts = importText.split('import');
-        if (importParts.length !== 2) return importText;
-
-        const [fromPart, namesPart] = importParts;
-        const names = namesPart
-            .trim()
-            .split(',')
-            .map(n => n.trim());
-        names.push(typeName);
-
-        return `${fromPart}import ${names.join(', ')}`;
     }
 
     /**
@@ -218,26 +89,6 @@ export class ASTService {
         }
 
         return baseClasses;
-    }
-
-    /**
-     * 查找指定类型的所有节点
-     * @param predicate 节点匹配条件
-     * @param parent 可选的父节点
-     */
-    public findNodes(predicate: (node: SyntaxNode) => boolean, parent?: SyntaxNode): SyntaxNode[] {
-        if (!this.tree) return [];
-
-        const nodes: SyntaxNode[] = [];
-        const rootNode = parent || this.tree.rootNode;
-
-        this.traverseTree(rootNode, node => {
-            if (predicate(node)) {
-                nodes.push(node);
-            }
-        });
-
-        return nodes;
     }
 
     /**
@@ -316,26 +167,27 @@ export class ASTService {
         return values;
     }
 
-    /**
-     * 获取导入语句中的所有类型名称
-     * @param importStatement 导入语句节点
-     * @returns 类型名称数组
-     */
-    public getImportedTypes(importStatement: ImportStatementNode): string[] {
-        // 使用原始源代码而不是节点的text属性
-        const importText = this.sourceCode.slice(importStatement.start, importStatement.end);
-
-        // 匹配 from typing import 后面的内容，使用[\s\S]*来代替/s标志
-        const match = importText.match(/from\s+typing\s+import\s+([\s\S]+)$/);
-        if (!match) return [];
-
-        // 处理括号形式和普通形式
-        const importPart = match[1]
-            .replace(/[\(\)]/g, '') // 移除括号
-            .replace(/\s*,\s*/g, ',') // 标准化逗号周围的空白
-            .replace(/\n\s*/g, '') // 移除换行和缩进
-            .trim();
-
-        return importPart.split(',').filter((name: string) => name.length > 0);
+    // 导入相关的方法委托给AST4Import
+    public findAllImports(): SyntaxNode[] {
+        if (!this.tree || !this.ast4Import) return [];
+        return this.ast4Import.findAllImports(this.tree.rootNode);
     }
+
+    public findTypingImport(ast: AST, typeName: string): ImportNode | null {
+        return this.ast4Import?.findTypingImport(ast, typeName) || null;
+    }
+
+    public findTypingImportStatement(ast: AST): ImportStatementNode | null {
+        return this.ast4Import?.findTypingImportStatement(ast) || null;
+    }
+
+    public addTypeToImport(importNode: ImportStatementNode, typeName: string): string {
+        return this.ast4Import?.addTypeToImport(importNode, typeName) || '';
+    }
+
+    public getImportedTypes(importStatement: ImportStatementNode): string[] {
+        return this.ast4Import?.getImportedTypes(importStatement) || [];
+    }
+
+
 }
