@@ -23,8 +23,23 @@ export async function activate(context: vscode.ExtensionContext) {
 
     // 初始化并启动自定义类型搜索
     const customTypeSearch = CustomTypeSearch.getInstance();
-    await customTypeSearch.scanWorkspace(); // 扫描工作区
-    customTypeSearch.watchWorkspace(); // 监听文件变化
+
+    // 解析当前活动文档
+    const activeEditor = vscode.window.activeTextEditor;
+    if (activeEditor && activeEditor.document.languageId === 'python') {
+        await customTypeSearch.parseDocument(activeEditor.document);
+    }
+
+    // 监听文档变化
+    context.subscriptions.push(
+        customTypeSearch.watchCurrentDocument(),
+        // 监听活动编辑器变化
+        vscode.window.onDidChangeActiveTextEditor(async editor => {
+            if (editor && editor.document.languageId === 'python') {
+                await customTypeSearch.parseDocument(editor.document);
+            }
+        })
+    );
 
     // 注册文档变更监听
     context.subscriptions.push(
@@ -40,7 +55,7 @@ export async function activate(context: vscode.ExtensionContext) {
     // context.subscriptions用于管理插件的资源释放
     context.subscriptions.push(
         // 注册funcparam提示的自动完成提供程序
-        // 'python' - 只在Python文件中生效
+        // 只在Python文件中生效
         // paramHintTrigger - 触发自动完成的字符(这里是':')
         vscode.languages.registerCompletionItemProvider(
             'python',

@@ -39,30 +39,17 @@ export class CustomTypeSearch {
     }
 
     /**
-     * 扫描整个工作区的Python文件
-     * 收集所有的类定义和导入信息
+     * 解析单个Python文件
+     * @param document 当前文档
      */
-    public async scanWorkspace() {
-        console.log('Starting workspace scan for Python files...');
-        const pythonFiles = await vscode.workspace.findFiles('**/*.py');
-        console.log(`Found ${pythonFiles.length} Python files`);
-
-        for (const file of pythonFiles) {
-            console.log(`Processing file: ${file.fsPath}`);
-            const content = await this.readFile(file);
-            this.parseFileContent(content, file.fsPath);
+    public async parseDocument(document: vscode.TextDocument) {
+        if (document.languageId !== 'python') {
+            return;
         }
-        console.log('Workspace scan completed');
-    }
 
-    /**
-     * 读取文件内容
-     * @param uri 文件URI
-     * @returns 文件内容字符串
-     */
-    private async readFile(uri: vscode.Uri): Promise<string> {
-        const document = await vscode.workspace.openTextDocument(uri);
-        return document.getText();
+        console.log(`Processing file: ${document.uri.fsPath}`);
+        const content = document.getText();
+        this.parseFileContent(content, document.uri.fsPath);
     }
 
     /**
@@ -121,28 +108,17 @@ export class CustomTypeSearch {
     }
 
     /**
-     * 监听工作区文件变化
-     * 实时更新类定义和导入信息
+     * 监听当前文档变化
      */
-    public watchWorkspace() {
-        const watcher = vscode.workspace.createFileSystemWatcher('**/*.py');
-
-        watcher.onDidChange(async uri => {
-            const content = await this.readFile(uri);
-            // 先清除旧数据
-            this.searchedTypes.removeAllFileData(uri.fsPath);
-            // 重新解析
-            this.parseFileContent(content, uri.fsPath);
-        });
-
-        watcher.onDidCreate(async uri => {
-            const content = await this.readFile(uri);
-            this.parseFileContent(content, uri.fsPath);
-        });
-
-        watcher.onDidDelete(uri => {
-            this.cacheService.clearCache(uri.fsPath);
-            this.searchedTypes.removeAllFileData(uri.fsPath);
+    public watchCurrentDocument() {
+        return vscode.workspace.onDidChangeTextDocument(event => {
+            const document = event.document;
+            if (document.languageId === 'python') {
+                // 先清除旧数据
+                this.searchedTypes.removeAllFileData(document.uri.fsPath);
+                // 重新解析
+                this.parseDocument(document);
+            }
         });
     }
 }
