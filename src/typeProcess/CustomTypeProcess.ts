@@ -3,6 +3,8 @@ import { BaseTypeProcess } from './BaseTypeProcess';
 import { TypeHintSettings } from '../settings';
 import CustomTypes from '../typeData/CustomTypes';
 import { TypeCategory } from '../typeData/BaseTypes';
+import * as fs from 'fs';
+import * as path from 'path';
 
 /**
  * 自定义类型处理中间件
@@ -11,10 +13,22 @@ import { TypeCategory } from '../typeData/BaseTypes';
 export class CustomTypeProcess extends BaseTypeProcess {
     private searchedTypes: CustomTypes;
     private static TYPE_SOURCE = '[custom]';
+    private static DEBUG_FILE = 'E:\\0000__Python_Project\\00__Make_Type_Hint_Great\\DeBug.txt';
 
     constructor(settings: TypeHintSettings, itemSortPrefix: number = 80) {
         super(settings, itemSortPrefix);
         this.searchedTypes = CustomTypes.getInstance();
+    }
+
+    /**
+     * 写入调试信息到文件
+     */
+    private writeDebugInfo(content: string) {
+        try {
+            fs.writeFileSync(CustomTypeProcess.DEBUG_FILE, content);
+        } catch (error) {
+            console.error('写入调试文件失败:', error);
+        }
     }
 
     /**
@@ -43,9 +57,44 @@ export class CustomTypeProcess extends BaseTypeProcess {
      */
     public getAllCustomTypeHints(document: TextDocument): CompletionItem[] {
         return this.typeCache.getOrCreate(`allCustomTypes:${document.uri.fsPath}`, document, () => {
-            // 获取当前文件相关的类型
             const currentFilePath = document.uri.fsPath;
             const items: CompletionItem[] = [];
+
+            // #region TYPE_STATISTICS_USAGE
+            // 获取并记录当前文件的类型统计信息
+            let debugOutput = `Type Statistics for ${currentFilePath}:\n`;
+            const typeStats = this.searchedTypes.getTypeStats();
+
+            // 按类别组织当前文件的统计信息
+            const categorizedStats = new Map<string, { count: number; types: string[] }>();
+
+            // 只统计当前文件中的类型
+            const currentFileTypes = this.searchedTypes.getFileTypes(currentFilePath);
+            currentFileTypes.forEach(({ name }) => {
+                const stats = typeStats.get(name);
+                if (stats) {
+                    const category = stats.category;
+                    const categoryStats = categorizedStats.get(category) || { count: 0, types: [] };
+                    categoryStats.count += stats.count;
+                    categoryStats.types.push(`${name}(${stats.count})`);
+                    categorizedStats.set(category, categoryStats);
+                }
+            });
+
+            // 格式化统计信息
+            if (categorizedStats.size > 0) {
+                categorizedStats.forEach((stats, category) => {
+                    debugOutput += `\n${category} (Total: ${stats.count}):\n`;
+                    debugOutput += stats.types.join(', ') + '\n';
+                });
+            } else {
+                debugOutput += '\nNo types found in this file.\n';
+            }
+
+            // 覆盖式写入调试信息
+            this.writeDebugInfo(debugOutput);
+            console.log(debugOutput);
+            // #endregion TYPE_STATISTICS_USAGE
 
             // 获取本地类
             for (const [className, info] of this.searchedTypes.getLocalClasses()) {

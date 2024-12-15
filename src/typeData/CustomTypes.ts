@@ -1,5 +1,25 @@
 import { EventEmitter } from 'vscode';
 
+// #region TYPE_STATISTICS
+/** 类型统计信息接口 */
+interface TypeStats {
+    /** 类型使用次数 */
+    count: number;
+    /** 类型分类 */
+    category: string;
+}
+
+/** 类型统计相关的扩展方法 */
+interface TypeStatisticsMethods {
+    /** 获取类型使用统计信息 */
+    getTypeStats(): Map<string, TypeStats>;
+    /** 更新类型使用统计 */
+    updateTypeStats(typeName: string, category: string): void;
+    /** 重置类型统计信息 */
+    resetTypeStats(): void;
+}
+// #endregion TYPE_STATISTICS
+
 /**
  * CustomTypes类负责存储和管理从Python文件中收集到的类型信息
  * 包括:
@@ -45,6 +65,34 @@ export default class CustomTypes {
 
     private typesChangedEmitter = new EventEmitter<void>();
 
+    // #region TYPE_STATISTICS_IMPLEMENTATION
+    /** 存储类型使用统计信息 */
+    private typeStats: Map<string, TypeStats> = new Map();
+
+    /** 更新类型使用统计 */
+    private updateTypeStats(typeName: string, category: string) {
+        const stats = this.typeStats.get(typeName) || { count: 0, category };
+        stats.count++;
+        this.typeStats.set(typeName, stats);
+    }
+
+    /** 获取类型使用统计信息 */
+    public getTypeStats(): Map<string, TypeStats> {
+        return this.typeStats;
+    }
+
+    /** 重置类型统计信息 */
+    private resetTypeStats() {
+        this.typeStats.clear();
+        this.localClasses.forEach((_, name) => this.updateTypeStats(name, 'LocalClass'));
+        this.importedClasses.forEach((_, name) => this.updateTypeStats(name, 'ImportedClass'));
+        this.typeAliases.forEach((_, name) => this.updateTypeStats(name, 'TypeAlias'));
+        this.typeVars.forEach((_, name) => this.updateTypeStats(name, 'TypeVar'));
+        this.protocols.forEach((_, name) => this.updateTypeStats(name, 'Protocol'));
+        this.literalTypes.forEach((_, name) => this.updateTypeStats(name, 'LiteralType'));
+    }
+    // #endregion TYPE_STATISTICS_IMPLEMENTATION
+
     /** 私有构造函数，确保单例模式 */
     private constructor() {
         this.typeAliases = new Map();
@@ -76,6 +124,9 @@ export default class CustomTypes {
             filePath,
             baseClasses,
         });
+        // #region TYPE_STATISTICS_USAGE
+        this.updateTypeStats(className, 'LocalClass');
+        // #endregion TYPE_STATISTICS_USAGE
         this.notifyTypesChanged();
     }
 
@@ -90,6 +141,9 @@ export default class CustomTypes {
             originalName: className,
             filePath,
         });
+        // #region TYPE_STATISTICS_USAGE
+        this.updateTypeStats(className, 'ImportedClass');
+        // #endregion TYPE_STATISTICS_USAGE
         this.notifyTypesChanged();
     }
 
@@ -170,6 +224,9 @@ export default class CustomTypes {
      */
     public addTypeAlias(name: string, originalType: string, filePath: string) {
         this.typeAliases.set(name, { originalType, filePath });
+        // #region TYPE_STATISTICS_USAGE
+        this.updateTypeStats(name, 'TypeAlias');
+        // #endregion TYPE_STATISTICS_USAGE
         this.notifyTypesChanged();
     }
 
@@ -181,6 +238,9 @@ export default class CustomTypes {
      */
     public addTypeVar(name: string, constraints: string[], filePath: string) {
         this.typeVars.set(name, { constraints, filePath });
+        // #region TYPE_STATISTICS_USAGE
+        this.updateTypeStats(name, 'TypeVar');
+        // #endregion TYPE_STATISTICS_USAGE
         this.notifyTypesChanged();
     }
 
@@ -220,6 +280,10 @@ export default class CustomTypes {
             }
         }
 
+        // #region TYPE_STATISTICS_USAGE
+        this.resetTypeStats();
+        // #endregion TYPE_STATISTICS_USAGE
+
         this.notifyTypesChanged();
     }
 
@@ -235,12 +299,18 @@ export default class CustomTypes {
         filePath: string
     ) {
         this.protocols.set(name, { methods, filePath });
+        // #region TYPE_STATISTICS_USAGE
+        this.updateTypeStats(name, 'Protocol');
+        // #endregion TYPE_STATISTICS_USAGE
         this.notifyTypesChanged();
     }
 
     /** 添加字面量类型 */
     public addLiteralType(name: string, values: (string | number | boolean)[], filePath: string) {
         this.literalTypes.set(name, { values, filePath });
+        // #region TYPE_STATISTICS_USAGE
+        this.updateTypeStats(name, 'LiteralType');
+        // #endregion TYPE_STATISTICS_USAGE
         this.notifyTypesChanged();
     }
 
