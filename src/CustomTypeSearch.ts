@@ -79,15 +79,21 @@ export class CustomTypeSearch {
             this.searchedTypes.addImportedClass(className, filePath, alias);
         }
 
-        // 处理类型别名和NewType
-        const typeAliases = typeAnalyzer.analyzeTypeAliases();
-        for (const { name, originalType } of typeAliases) {
+        // 处理类型别名、字面量类型和类型变量
+        const typeAnalysis = typeAnalyzer.analyzeTypeAliases();
+
+        // 处理类型别名
+        for (const { name, originalType } of typeAnalysis.aliases) {
             this.searchedTypes.addTypeAlias(name, originalType, filePath);
         }
 
+        // 处理字面量类型
+        for (const { name, values } of typeAnalysis.literals) {
+            this.searchedTypes.addLiteralType(name, values, filePath);
+        }
+
         // 处理类型变量
-        const typeVars = typeAnalyzer.analyzeTypeVars();
-        for (const { name, constraints } of typeVars) {
+        for (const { name, constraints } of typeAnalysis.typeVars) {
             const trimmedName = name.trim();
             if (!trimmedName || trimmedName === 'super') {
                 continue;
@@ -99,12 +105,6 @@ export class CustomTypeSearch {
         const protocols = typeAnalyzer.analyzeProtocols();
         for (const { name, methods } of protocols) {
             this.searchedTypes.addProtocol(name, methods, filePath);
-        }
-
-        // 处理字面量类型
-        const literals = typeAnalyzer.analyzeLiteralTypes();
-        for (const { name, values } of literals) {
-            this.searchedTypes.addLiteralType(name, values, filePath);
         }
     }
 

@@ -220,19 +220,16 @@ export class ASTService {
      */
     public getLiteralValues(node: SyntaxNode): (string | number | boolean)[] {
         const values: (string | number | boolean)[] = [];
-        const literalList = node.children.find(
-            (child: SyntaxNode) => child.type === 'list' || child.type === 'tuple'
-        );
 
-        if (literalList) {
-            for (const value of literalList.children) {
-                if (value.type === 'string') {
-                    values.push(value.text);
-                } else if (value.type === 'number') {
-                    values.push(Number(value.text));
-                } else if (value.type === 'true' || value.type === 'false') {
-                    values.push(value.type === 'true');
-                }
+        // 直接遍历所有子节点获取值
+        for (const child of node.children) {
+            if (
+                child.type === 'string' ||
+                child.type === 'number' ||
+                child.type === 'true' ||
+                child.type === 'false'
+            ) {
+                values.push(child.text);
             }
         }
 

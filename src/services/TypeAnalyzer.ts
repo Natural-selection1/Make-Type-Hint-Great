@@ -216,14 +216,16 @@ export class TypeAnalyzer {
 
     /**
      * 分析类型别名定义
-     * @returns 类型别名数组
+     * @returns 类型别名、字面量类型和类型变量的分析结果
      */
-    // ! 这个分析已经验证过了,没有问题
-    public analyzeTypeAliases() {
-        const aliases: Array<{
-            name: string;
-            originalType: string;
-        }> = [];
+    public analyzeTypeAliases(): {
+        aliases: Array<{ name: string; originalType: string }>;
+        literals: Array<{ name: string; values: (string | number | boolean)[] }>;
+        typeVars: Array<{ name: string; constraints: string[] }>;
+    } {
+        const aliases: Array<{ name: string; originalType: string }> = [];
+        const literals: Array<{ name: string; values: (string | number | boolean)[] }> = [];
+        const typeVars: Array<{ name: string; constraints: string[] }> = [];
 
         // 查找所有赋值语句
         const assignments = this.astService.findNodes(
@@ -244,27 +246,69 @@ export class TypeAnalyzer {
 
             // 获取基础类型名称
             const baseTypeNode = rightSide.children.find(child => child.type === 'identifier');
-
             if (!baseTypeNode) continue;
 
             const baseTypeName = baseTypeNode.text;
 
-            // 检查是否是可细化类型(从BaseTypes中获取)
-            const isRefinableType = this.isRefinableBaseType(baseTypeName);
+            // 处理Literal类型
+            if (baseTypeName === 'Literal') {
+                const values = this.astService.getLiteralValues(rightSide);
+                if (values.length > 0) {
+                    literals.push({
+                        name: nameNode.text,
+                        values,
+                    });
+                }
+                continue;
+            }
 
-            // 排除Literal类型(它属于字面量类型)
-            if (!isRefinableType || baseTypeName === 'Literal') continue;
+            // 处理TypeVar类型
+            if (baseTypeName === 'TypeVar') {
+                const constraints = this.analyzeTypeVarConstraints(rightSide);
+                typeVars.push({
+                    name: nameNode.text,
+                    constraints,
+                });
+                continue;
+            }
+
+            // 检查是否是可细化类型
+            const isRefinableType = this.isRefinableBaseType(baseTypeName);
+            if (!isRefinableType) {
+                continue;
+            }
 
             // 获取完整的类型表达式
             const originalType = rightSide.text;
-
             aliases.push({
                 name: nameNode.text,
                 originalType,
             });
         }
 
-        return aliases;
+        return { aliases, literals, typeVars };
+    }
+
+    /**
+     * 分析TypeVar的约束条件
+     */
+    private analyzeTypeVarConstraints(node: SyntaxNode): string[] {
+        const constraints: string[] = [];
+
+        // 查找参数列表
+        const argList = node.children.find(child => child.type === 'argument_list');
+        if (!argList) return constraints;
+
+        // 跳过第一个参数(TypeVar名称)
+        const args = argList.children.slice(1);
+
+        for (const arg of args) {
+            if (arg.type === 'identifier') {
+                constraints.push(arg.text);
+            }
+        }
+
+        return constraints;
     }
 
     /**

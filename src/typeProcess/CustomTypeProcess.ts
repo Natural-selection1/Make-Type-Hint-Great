@@ -185,15 +185,18 @@ export class CustomTypeProcess extends BaseTypeProcess {
             }
 
             // 获取字面量类型
-            for (const [literalName, info] of this.searchedTypes.getLiteralTypes()) {
+            const literalTypes = this.searchedTypes.getLiteralTypes();
+            for (const [literalName, info] of literalTypes) {
                 if (info.filePath === currentFilePath) {
                     const detail = `${CustomTypeProcess.TYPE_SOURCE} (Literal: ${info.values.join(' | ')})`;
+                    const hint = literalName; // 使用字面量类型名称作为提示
                     items.push(
                         this.createCustomCompletionItem(
-                            literalName,
+                            hint,
                             (this.itemSortPrefix + 5).toString(),
                             document,
-                            detail
+                            detail,
+                            false // 字面量类型不需要方括号
                         )
                     );
                 }
