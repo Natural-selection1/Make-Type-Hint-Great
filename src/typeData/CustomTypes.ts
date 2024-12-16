@@ -1,6 +1,5 @@
 import { EventEmitter } from 'vscode';
 
-
 /** 类型统计信息接口 */
 interface TypeStats {
     /** 类型使用次数 */
@@ -8,7 +7,6 @@ interface TypeStats {
     /** 类型分类 */
     category: string;
 }
-
 
 /**
  * CustomTypes类负责存储和管理从Python文件中收集到的类型信息
@@ -121,7 +119,6 @@ export default class CustomTypes {
         return CustomTypes.instance;
     }
 
-
     /**
      * 添加本地定义的类
      * @param className 类名
@@ -213,8 +210,6 @@ export default class CustomTypes {
         this.notifyTypesChanged();
     }
 
-
-
     /**
      * 移除指定文件中的所有类定义和导入
      * @param filePath 要移除的文件路径
@@ -260,8 +255,6 @@ export default class CustomTypes {
         this.resetTypeStats();
         this.notifyTypesChanged();
     }
-
-
 
     /**
      * 获取所有已知的类名列表
@@ -435,5 +428,4 @@ export default class CustomTypes {
     public onTypesChanged(listener: () => void): void {
         this.typesChangedEmitter.event(listener);
     }
-
 }
