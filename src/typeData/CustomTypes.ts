@@ -9,15 +9,6 @@ interface TypeStats {
     category: string;
 }
 
-/** 类型统计相关的扩展方法 */
-interface TypeStatisticsMethods {
-    /** 获取类型使用统计信息 */
-    getTypeStats(): Map<string, TypeStats>;
-    /** 更新类型使用统计 */
-    updateTypeStats(typeName: string, category: string): void;
-    /** 重置类型统计信息 */
-    resetTypeStats(): void;
-}
 // #endregion TYPE_STATISTICS
 
 /**

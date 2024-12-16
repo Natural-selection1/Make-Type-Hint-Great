@@ -16,6 +16,50 @@ export class TypeAnalyzer {
     }
 
     /**
+     * 判断一个标识符是否为类名
+     */
+    public isClassName(name: string): boolean {
+        return /^[A-Z]/.test(name);
+    }
+
+    /**
+     * 判断是否为可细化的基础类型
+     */
+    private isRefinableBaseType(typeName: string): boolean {
+        const builtinType = getBaseType()[typeName];
+        return builtinType?.category === TypeCategory.Refinable;
+    }
+
+    /**
+     * 获取参数的现有类型注解
+     */
+    private getExistingParameterType(paramNode: SyntaxNode): string | undefined {
+        const parentNode = paramNode.parent;
+        if (!parentNode) return undefined;
+
+        const typeNode = parentNode.children.find(
+            (child: SyntaxNode) => child.type === 'type' || child.type === 'annotation'
+        );
+        return typeNode?.text;
+    }
+
+    /**
+     * 分析TypeVar的约束条件
+     */
+    private analyzeTypeVarConstraints(node: SyntaxNode): string[] {
+        const constraints: string[] = [];
+        const argList = node.children.find(child => child.type === 'argument_list');
+        if (!argList) return constraints;
+        const args = argList.children.slice(1);
+        for (const arg of args) {
+            if (arg.type === 'identifier') {
+                constraints.push(arg.text);
+            }
+        }
+        return constraints;
+    }
+
+    /**
      * 分析函数参数类型
      */
     public analyzeFunctionParameters(position: { line: number; character: number }): {
@@ -48,22 +92,6 @@ export class TypeAnalyzer {
 
         return null;
     }
-
-    /**
-     * 获取参数的现有类型注解
-     */
-    private getExistingParameterType(paramNode: SyntaxNode): string | undefined {
-        const parentNode = paramNode.parent;
-        if (!parentNode) return undefined;
-
-        const typeNode = parentNode.children.find(
-            (child: SyntaxNode) => child.type === 'type' || child.type === 'annotation'
-        );
-        return typeNode?.text;
-    }
-
-
-
 
     /**
      * 分析导入语句中的类
@@ -139,13 +167,6 @@ export class TypeAnalyzer {
     }
 
     /**
-     * 判断一个标识符是否为类名
-     */
-    public isClassName(name: string): boolean {
-        return /^[A-Z]/.test(name);
-    }
-
-    /**
      * 分析类型别名定义
      * @returns 类型别名、字面量类型和类型变量的分析结果
      */
@@ -218,39 +239,6 @@ export class TypeAnalyzer {
         }
 
         return { aliases, literals, typeVars };
-    }
-
-    /**
-     * 分析TypeVar的约束条件
-     */
-    private analyzeTypeVarConstraints(node: SyntaxNode): string[] {
-        const constraints: string[] = [];
-
-        // 查找参数列表
-        const argList = node.children.find(child => child.type === 'argument_list');
-        if (!argList) return constraints;
-
-        // 跳过第一个参数(TypeVar名称)
-        const args = argList.children.slice(1);
-
-        for (const arg of args) {
-            if (arg.type === 'identifier') {
-                constraints.push(arg.text);
-            }
-        }
-
-        return constraints;
-    }
-
-    /**
-     * 判断是否为可细化的基础类型
-     */
-    private isRefinableBaseType(typeName: string): boolean {
-        // 从BaseTypes中获取类型信息
-        const builtinType = getBaseType()[typeName];
-
-        // 检查类型是否存在且为可细化类型
-        return builtinType?.category === TypeCategory.Refinable;
     }
 
     /**
