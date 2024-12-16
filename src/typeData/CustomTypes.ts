@@ -106,7 +106,7 @@ export default class CustomTypes {
         this.protocols.forEach((_, name) => this.updateTypeStats(name, 'Protocol'));
         this.literalTypes.forEach((_, name) => this.updateTypeStats(name, 'LiteralType'));
     }
-    // #endregion
+    // #endregion 统计信息相关
 
     /**
      * 获取SearchedTypes的单例实例
