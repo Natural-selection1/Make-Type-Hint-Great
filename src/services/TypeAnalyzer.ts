@@ -214,17 +214,68 @@ export class TypeAnalyzer {
         return /^[A-Z]/.test(name);
     }
 
+    /**
+     * 分析类型别名定义
+     * @returns 类型别名数组
+     */
+    // ! 这个分析已经验证过了,没有问题
     public analyzeTypeAliases() {
-        // 分析类型别名定义
+        const aliases: Array<{
+            name: string;
+            originalType: string;
+        }> = [];
+
+        // 查找所有赋值语句
         const assignments = this.astService.findNodes(
             (node: SyntaxNode) => node.type === 'assignment'
         );
-        return assignments
-            .filter(node => this.isTypeAlias(node))
-            .map(node => ({
-                name: this.getAssignmentTarget(node),
-                originalType: this.getAssignmentValue(node),
-            }));
+
+        for (const node of assignments) {
+            // 获取左侧的变量名
+            const nameNode = node.children.find(child => child.type === 'identifier');
+            if (!nameNode) continue;
+
+            // 获取右侧的表达式
+            const rightSide = node.children.find(
+                child => child.type === 'call' || child.type === 'subscript'
+            );
+
+            if (!rightSide) continue;
+
+            // 获取基础类型名称
+            const baseTypeNode = rightSide.children.find(child => child.type === 'identifier');
+
+            if (!baseTypeNode) continue;
+
+            const baseTypeName = baseTypeNode.text;
+
+            // 检查是否是可细化类型(从BaseTypes中获取)
+            const isRefinableType = this.isRefinableBaseType(baseTypeName);
+
+            // 排除Literal类型(它属于字面量类型)
+            if (!isRefinableType || baseTypeName === 'Literal') continue;
+
+            // 获取完整的类型表达式
+            const originalType = rightSide.text;
+
+            aliases.push({
+                name: nameNode.text,
+                originalType,
+            });
+        }
+
+        return aliases;
+    }
+
+    /**
+     * 判断是否为可细化的基础类型
+     */
+    private isRefinableBaseType(typeName: string): boolean {
+        // 从BaseTypes中获取类型信息
+        const builtinType = getBaseType()[typeName];
+
+        // 检查类型是否存在且为可细化类型
+        return builtinType?.category === TypeCategory.Refinable;
     }
 
     public analyzeTypeVars() {
