@@ -80,7 +80,7 @@ export class CustomTypeSearch {
         }
 
         // 处理类型别名、字面量类型和类型变量
-        const typeAnalysis = typeAnalyzer.analyzeTypeAliases();
+        const typeAnalysis = typeAnalyzer.collectTypeDefinitions();
 
         // 处理类型别名
         for (const { name, originalType } of typeAnalysis.aliases) {

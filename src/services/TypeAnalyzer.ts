@@ -62,77 +62,8 @@ export class TypeAnalyzer {
         return typeNode?.text;
     }
 
-    /**
-     * 分析自定义类型
-     */
-    public analyzeCustomTypes(): DataType[] {
-        const customTypes: DataType[] = [];
-        const classNodes = this.astService.findAllClassDefinitions();
 
-        for (const node of classNodes) {
-            // 获取类名
-            const nameNode = node.children.find(child => child.type === 'identifier');
-            if (nameNode) {
-                // 分析类的继承关系
-                const baseClasses = this.analyzeBaseClasses(node);
 
-                // 确定类型分类
-                const category = this.determineTypeCategory(node, baseClasses);
-
-                // 创建自定义类型
-                customTypes.push(new DataType(nameNode.text as any, category));
-            }
-        }
-
-        return customTypes;
-    }
-
-    /**
-     * 分析类的基类
-     */
-    private analyzeBaseClasses(classNode: SyntaxNode): string[] {
-        const baseClasses: string[] = [];
-        const argumentList = classNode.children.find(child => child.type === 'argument_list');
-
-        if (argumentList) {
-            for (const child of argumentList.children) {
-                if (child.type === 'identifier') {
-                    baseClasses.push(child.text);
-                }
-            }
-        }
-
-        return baseClasses;
-    }
-
-    /**
-     * 确定类型的分类
-     */
-    private determineTypeCategory(classNode: SyntaxNode, baseClasses: string[]): TypeCategory {
-        // 检查是否继承自已知的可细化类型
-        const refinableBaseTypes = ['List', 'Dict', 'Set', 'Tuple', 'Sequence', 'Mapping'];
-        if (baseClasses.some(base => refinableBaseTypes.includes(base))) {
-            return TypeCategory.Refinable;
-        }
-
-        // 检查类的方法和属性以确定是否可细化
-        const hasGenericMethods = this.hasGenericMethods(classNode);
-        return hasGenericMethods ? TypeCategory.Refinable : TypeCategory.NonRefinable;
-    }
-
-    /**
-     * 检查类是否包含泛型方法
-     */
-    private hasGenericMethods(classNode: SyntaxNode): boolean {
-        const functionDefs = classNode.children.filter(
-            child => child.type === 'function_definition'
-        );
-
-        return functionDefs.some(func => {
-            const typeParameters = func.children.find(child => child.type === 'type_parameters');
-            return !!typeParameters;
-        });
-    }
 
     /**
      * 分析导入语句中的类
@@ -218,7 +149,7 @@ export class TypeAnalyzer {
      * 分析类型别名定义
      * @returns 类型别名、字面量类型和类型变量的分析结果
      */
-    public analyzeTypeAliases(): {
+    public collectTypeDefinitions(): {
         aliases: Array<{ name: string; originalType: string }>;
         literals: Array<{ name: string; values: (string | number | boolean)[] }>;
         typeVars: Array<{ name: string; constraints: string[] }>;
@@ -244,7 +175,7 @@ export class TypeAnalyzer {
 
             if (!rightSide) continue;
 
-            // 获取基础类型名称
+            // 忽略基础类型名称
             const baseTypeNode = rightSide.children.find(child => child.type === 'identifier');
             if (!baseTypeNode) continue;
 
@@ -322,52 +253,6 @@ export class TypeAnalyzer {
         return builtinType?.category === TypeCategory.Refinable;
     }
 
-    public analyzeTypeVars() {
-        // 分析TypeVar定义
-        const typeVarCalls = this.astService
-            .findNodes((node: SyntaxNode) => node.type === 'call')
-            .filter(node => this.isTypeVarDefinition(node));
-
-        return typeVarCalls.map(node => ({
-            name: this.getTypeVarName(node),
-            constraints: this.getTypeVarConstraints(node),
-        }));
-    }
-
-    private getAssignmentTarget(node: SyntaxNode): string {
-        return node.children.find(child => child.type === 'identifier')?.text || '';
-    }
-
-    private getAssignmentValue(node: SyntaxNode): string {
-        return node.children.find(child => child.type === 'expression')?.text || '';
-    }
-
-    private getTypeVarName(node: SyntaxNode): string {
-        return node.children.find(child => child.type === 'identifier')?.text || '';
-    }
-
-    private getTypeVarConstraints(node: SyntaxNode): string[] {
-        return []; // 实现获取约束的逻辑
-    }
-
-    private isTypeAlias(node: SyntaxNode): boolean {
-        return node.type === 'assignment' && this.isTypeAliasPattern(node);
-    }
-
-    private isTypeVarDefinition(node: SyntaxNode): boolean {
-        return node.type === 'call' && this.isTypeVarPattern(node);
-    }
-
-    private isTypeAliasPattern(node: SyntaxNode): boolean {
-        // 实现类型别名模式检查
-        return true;
-    }
-
-    private isTypeVarPattern(node: SyntaxNode): boolean {
-        // 实现 TypeVar 模式检查
-        return true;
-    }
-
     /**
      * 分析协议类型定义
      * @returns 协议类型数组
@@ -438,41 +323,5 @@ export class TypeAnalyzer {
         }
 
         return protocols;
-    }
-
-    /**
-     * 分析字面量类型定义
-     * @returns 字面量类型数组
-     */
-    public analyzeLiteralTypes(): Array<{
-        name: string;
-        values: (string | number | boolean)[];
-    }> {
-        const literals: Array<{
-            name: string;
-            values: (string | number | boolean)[];
-        }> = [];
-
-        // 查找所有Literal类型定义
-        const literalNodes = this.astService.findNodes(
-            (node: SyntaxNode) =>
-                node.type === 'assignment' && this.astService.hasTypeAnnotation(node, 'Literal')
-        );
-
-        for (const node of literalNodes) {
-            const nameNode = node.children.find(child => child.type === 'identifier');
-            if (!nameNode) continue;
-
-            // 解析字面量值
-            const values = this.astService.getLiteralValues(node);
-            if (values.length > 0) {
-                literals.push({
-                    name: nameNode.text,
-                    values,
-                });
-            }
-        }
-
-        return literals;
     }
 }
