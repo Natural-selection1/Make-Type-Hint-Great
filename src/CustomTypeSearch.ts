@@ -62,19 +62,21 @@ export class CustomTypeSearch {
 
         const typeAnalyzer = new TypeAnalyzer(this.astService);
 
-        // 处理导入语句,支持别名
+        // #region 处理导入语句,支持别名 Bug
         const importedClasses = typeAnalyzer.analyzeImports() as ImportedClass[];
         for (const { className, alias } of importedClasses) {
             this.searchedTypes.addImportedClass(className, filePath, alias);
         }
+        // #endregion
 
-        // 处理协议类型
+        // #region 处理协议类型 Done
         const protocols = typeAnalyzer.analyzeProtocols();
         for (const { name, methods } of protocols) {
             this.searchedTypes.addProtocol(name, methods, filePath);
         }
+        // #endregion
 
-        // 处理类定义
+        // #region 处理类定义 Done
         const classNodes = this.astService.findAllClassDefinitions();
         for (const node of classNodes) {
             // 检查是否是协议类型
@@ -90,8 +92,9 @@ export class CustomTypeSearch {
                 }
             }
         }
+        // #endregion
 
-        // 处理类型别名、字面量类型和类型变量
+        // #region 处理类型别名、字面量类型和类型变量 Bug
         const typeAnalysis = typeAnalyzer.analyzeVariableTypes();
 
         // 处理类型别名
@@ -112,6 +115,7 @@ export class CustomTypeSearch {
             }
             this.searchedTypes.addTypeVar(trimmedName, constraints, filePath);
         }
+        // #endregion
     }
 
     /**
