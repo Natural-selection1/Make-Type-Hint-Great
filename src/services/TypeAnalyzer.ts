@@ -6,6 +6,8 @@ interface ImportResult {
     className: string;
     source: string;
     alias?: string;
+    isFromImport: boolean;
+    importStatement?: string;
 }
 
 export class TypeAnalyzer {
@@ -19,6 +21,7 @@ export class TypeAnalyzer {
      * 判断一个标识符是否为类名
      */
     public isClassName(name: string): boolean {
+        // 否则判断是否以大写字母开头
         return /^[A-Z]/.test(name);
     }
 
@@ -120,6 +123,8 @@ export class TypeAnalyzer {
                     results.push({
                         className,
                         source: child.text,
+                        isFromImport: false,
+                        importStatement: `import ${child.text}`,
                     });
                 }
             }
@@ -128,40 +133,57 @@ export class TypeAnalyzer {
 
     private analyzeFromImportStatement(node: SyntaxNode, results: ImportResult[]) {
         const moduleNode = node.children.find(child => child.type === 'dotted_name');
-        const importedNames = node.children.find(child => child.type === 'import_list');
+        if (moduleNode?.text === 'typing') return;
 
-        if (importedNames && moduleNode) {
-            const modulePath = moduleNode.text;
+        // 打印调试信息
+        console.log(
+            node.text,
+            'All children types:',
+            node.children.map(child => ({
+                type: child.type,
+                text: child.text,
+            }))
+        );
 
-            for (const name of importedNames.children) {
-                if (name.type === 'aliased_import') {
-                    const originalName =
-                        name.children.find(child => child.type === 'identifier')?.text || '';
-                    const aliasName = name.children
-                        .find(child => child.type === 'alias')
-                        ?.children.find(child => child.type === 'identifier')?.text;
+        if (!moduleNode) return;
+        const modulePath = moduleNode.text;
 
-                    if (this.isClassName(originalName)) {
-                        results.push({
-                            className: originalName,
-                            source: modulePath,
-                        });
-                        if (aliasName && this.isClassName(aliasName)) {
-                            results.push({
-                                className: aliasName,
-                                source: modulePath,
-                            });
-                        }
-                    }
-                } else if (name.type === 'identifier') {
-                    const className = name.text;
-                    if (this.isClassName(className)) {
-                        results.push({
-                            className,
-                            source: modulePath,
-                        });
-                    }
-                }
+        // 处理别名导入
+        const aliasedImport = node.children.find(child => child.type === 'aliased_import');
+        if (aliasedImport) {
+            const [sourceName, aliasName] = aliasedImport.text.split('as').map(s => s.trim());
+            if (this.isClassName(sourceName)) {
+                console.log('Found alias class:', {
+                    className: sourceName,
+                    source: modulePath,
+                    alias: aliasName,
+                });
+                results.push({
+                    className: sourceName,
+                    source: modulePath,
+                    alias: aliasName,
+                    isFromImport: true,
+                    importStatement: `from ${modulePath} import ${sourceName} as ${aliasName}`,
+                });
+            }
+            return;
+        }
+
+        // 处理普通导入
+        const importedNames = node.children.filter(
+            child => child.type === 'dotted_name' && child !== moduleNode
+        );
+
+        for (const name of importedNames) {
+            const className = name.text;
+            if (this.isClassName(className)) {
+                console.log('Found class:', { className, source: modulePath });
+                results.push({
+                    className,
+                    source: modulePath,
+                    isFromImport: true,
+                    importStatement: `from ${modulePath} import ${className}`,
+                });
             }
         }
     }

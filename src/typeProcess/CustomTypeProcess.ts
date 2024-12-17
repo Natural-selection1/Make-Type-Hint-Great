@@ -120,7 +120,22 @@ export class CustomTypeProcess extends BaseTypeProcess {
             // 获取导入的类
             for (const [className, info] of this.searchedTypes.getImportedClasses()) {
                 if (info.filePath === currentFilePath) {
-                    const detail = `${CustomTypeProcess.TYPE_SOURCE} (Imported from ${info.originalName})`;
+                    let importDetail = '';
+                    if (info.isFromImport) {
+                        importDetail = `from ${info.source} import ${info.originalName}`;
+                        if (info.alias) {
+                            importDetail += ` as ${info.alias}`;
+                        }
+                    } else {
+                        importDetail = `import ${info.source}`;
+                    }
+
+                    const detail =
+                        `${CustomTypeProcess.TYPE_SOURCE}\n` +
+                        `Import: ${importDetail}\n` +
+                        `Original: ${info.originalName}` +
+                        (info.alias ? `\nAlias: ${info.alias}` : '');
+
                     items.push(
                         this.createCustomCompletionItem(
                             className,

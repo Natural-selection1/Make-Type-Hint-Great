@@ -64,8 +64,14 @@ export class CustomTypeSearch {
 
         // #region 处理导入语句,支持别名 Bug
         const importedClasses = typeAnalyzer.analyzeImports() as ImportedClass[];
-        for (const { className, alias } of importedClasses) {
-            this.searchedTypes.addImportedClass(className, filePath, alias);
+        for (const { className, source, alias } of importedClasses) {
+            this.searchedTypes.addImportedClass(
+                className,
+                filePath,
+                source,
+                true, // isFromImport
+                alias
+            );
         }
         // #endregion
 

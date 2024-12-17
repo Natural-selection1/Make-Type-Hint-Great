@@ -6,6 +6,19 @@ interface TypeStats {
     count: number;
     /** 类型分类 */
     category: string;
+    /** 来源信息 */
+    source?: string;
+    /** 导入语句 */
+    importStatement?: string;
+}
+
+/** 导入类信息接口 */
+interface ImportedClassInfo {
+    originalName: string;
+    filePath: string;
+    source: string;
+    alias?: string;
+    isFromImport: boolean;
 }
 
 /**
@@ -26,7 +39,7 @@ export default class CustomTypes {
     /** 存储本地定义的类名到文件路径和基类信息的映射 */
     private localClasses: Map<string, { filePath: string; baseClasses: string[] }> = new Map();
     /** 存储导入的类名到原始名称和文件路径的映射 */
-    private importedClasses: Map<string, { originalName: string; filePath: string }> = new Map();
+    private importedClasses: Map<string, ImportedClassInfo> = new Map();
     /** 类型别名映射：别名 -> {原始类型, 文件路径} */
     private typeAliases: Map<string, { originalType: string; filePath: string }>;
     /** 类型变量映射：变量名 -> {约束条件, 文件路径} */
@@ -90,17 +103,43 @@ export default class CustomTypes {
     }
     // #region 统计信息相关
     /** 更新类型使用统计 */
-    private updateTypeStats(typeName: string, category: string) {
-        const stats = this.typeStats.get(typeName) || { count: 0, category };
+    private updateTypeStats(
+        typeName: string,
+        category: string,
+        source?: string,
+        importStatement?: string
+    ) {
+        const stats = this.typeStats.get(typeName) || {
+            count: 0,
+            category,
+            source,
+            importStatement,
+        };
         stats.count++;
+
+        // 如果提供了新的source或importStatement,就更新它们
+        if (source) stats.source = source;
+        if (importStatement) stats.importStatement = importStatement;
+
         this.typeStats.set(typeName, stats);
     }
 
     /** 重置类型统计信息 */
     private resetTypeStats() {
         this.typeStats.clear();
+
+        // 处理本地类
         this.localClasses.forEach((_, name) => this.updateTypeStats(name, 'LocalClass'));
-        this.importedClasses.forEach((_, name) => this.updateTypeStats(name, 'ImportedClass'));
+
+        // 处理导入的类
+        this.importedClasses.forEach((info, name) => {
+            const importStatement = info.isFromImport
+                ? `from ${info.source} import ${info.originalName}${info.alias ? ` as ${info.alias}` : ''}`
+                : `import ${info.source}`;
+            this.updateTypeStats(name, 'ImportedClass', info.source, importStatement);
+        });
+
+        // 处理其他类型
         this.typeAliases.forEach((_, name) => this.updateTypeStats(name, 'TypeAlias'));
         this.typeVars.forEach((_, name) => this.updateTypeStats(name, 'TypeVar'));
         this.protocols.forEach((_, name) => this.updateTypeStats(name, 'Protocol'));
@@ -142,14 +181,31 @@ export default class CustomTypes {
      * 添加导入的类
      * @param className 类名
      * @param filePath 导入该类的文件路径
+     * @param source 模块路径
+     * @param isFromImport 是否是 from import 语句
      * @param alias 可选的别名
      */
-    public addImportedClass(className: string, filePath: string, alias?: string) {
+    public addImportedClass(
+        className: string,
+        filePath: string,
+        source: string,
+        isFromImport: boolean = false,
+        alias?: string
+    ) {
+        const importStatement = isFromImport
+            ? `from ${source} import ${className}${alias ? ` as ${alias}` : ''}`
+            : `import ${source}`;
+
         this.importedClasses.set(alias || className, {
             originalName: className,
             filePath,
+            source,
+            alias,
+            isFromImport,
         });
-        this.updateTypeStats(className, 'ImportedClass'); // 更新类型统计
+
+        // 更新统计信息时包含导入信息
+        this.updateTypeStats(className, 'ImportedClass', source, importStatement);
         this.notifyTypesChanged();
     }
 
@@ -225,6 +281,7 @@ export default class CustomTypes {
      * @param filePath 要移除的文件路径
      */
     public removeAllFileData(filePath: string) {
+        // 先删除所有相关数据
         this.removeFromMap(this.localClasses, filePath);
         this.removeFromMap(this.importedClasses, filePath);
 
@@ -252,6 +309,7 @@ export default class CustomTypes {
             }
         }
 
+        // 删除完所有数据后再重置统计信息
         this.resetTypeStats();
         this.notifyTypesChanged();
     }
@@ -301,7 +359,7 @@ export default class CustomTypes {
      * 获取所有导入类的映射
      * @returns 导入类映射
      */
-    public getImportedClasses(): Map<string, { originalName: string; filePath: string }> {
+    public getImportedClasses(): Map<string, ImportedClassInfo> {
         return this.importedClasses;
     }
 
