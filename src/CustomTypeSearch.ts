@@ -77,16 +77,22 @@ export class CustomTypeSearch {
         // 处理类定义
         const classNodes = this.astService.findAllClassDefinitions();
         for (const node of classNodes) {
-            const nameNode = node.children.find(child => child.type === 'identifier');
-            if (nameNode) {
-                // 添加对继承的支持
-                const baseClasses = this.astService.getBaseClasses(node);
-                this.searchedTypes.addLocalClass(nameNode.text, filePath, baseClasses);
+            // 检查是否是协议类型
+            const isProtocol = this.astService.hasBaseClass(node, 'Protocol');
+
+            // 如果不是协议类型,才处理为普通类
+            if (!isProtocol) {
+                const nameNode = node.children.find(child => child.type === 'identifier');
+                if (nameNode) {
+                    // 添加对继承的支持
+                    const baseClasses = this.astService.getBaseClasses(node);
+                    this.searchedTypes.addLocalClass(nameNode.text, filePath, baseClasses);
+                }
             }
         }
 
         // 处理类型别名、字面量类型和类型变量
-        const typeAnalysis = typeAnalyzer.collectTypeDefinitions();
+        const typeAnalysis = typeAnalyzer.analyzeVariableTypes();
 
         // 处理类型别名
         for (const { name, originalType } of typeAnalysis.aliases) {

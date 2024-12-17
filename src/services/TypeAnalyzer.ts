@@ -170,7 +170,7 @@ export class TypeAnalyzer {
      * 分析类型别名定义
      * @returns 类型别名、字面量类型和类型变量的分析结果
      */
-    public collectTypeDefinitions(): {
+    public analyzeVariableTypes(): {
         aliases: Array<{ name: string; originalType: string }>;
         literals: Array<{ name: string; values: (string | number | boolean)[] }>;
         typeVars: Array<{ name: string; constraints: string[] }>;
